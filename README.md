@@ -9,5 +9,5 @@
 
 # 使用法
  - 今のところQuartusに依存しています。トップレベルが回路図（ChiinaDazzler.bdf）のため。
- - また Design Wave Magazine 2008年10月号の配布データ（https://www.cqpub.co.jp/dwm/download/dwm0810toku_3/top.htm）中のlist1-1.txtをVideoTimingGenerator.vにリネームして組み込む必要があります。
+ - また Design Wave Magazine 2008年10月号の配布データ（ https://www.cqpub.co.jp/dwm/download/dwm0810toku_3/top.htm ）中のlist1-1.txtをVideoTimingGenerator.vにリネームして組み込む必要があります。
   - そのうち不要にする
