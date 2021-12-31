@@ -42,13 +42,22 @@ architecture RTL of VideoTimingGen is
 begin
   u1:process(clk)
   begin
+    -- clk positive edge
     if(clk'event and clk = '1')then
       -- reset
       if(reset_in = '0')then
-        h_cnt_reg <= conv_std_logic_vector(0, 9);
-        v_cnt_reg <= conv_std_logic_vector(0, 10);
-      end if;
-    end if;
+        h_cnt_reg <= conv_std_logic_vector(0, H_CNT_WIDTH);
+        v_cnt_reg <= conv_std_logic_vector(0, V_CNT_WIDTH);
+      else
+        case h_cnt_reg is
+          when conv_std_logic_vector(H_VALID-1) =>
+            h_cnt_reg <= "000000000";
+          when others =>
+            -- !?
+            h_cnt_reg <= "000000000";
+        end case;
+      end if; -- end reset
+    end if; -- end clk positive edge
   end process;
 end RTL;
 
