@@ -12,8 +12,8 @@ entity VideoTimingGen is
   port(
   clk_in, reset_in  : in std_logic;
   h_blank_out, v_blank_out, h_sync_out, v_sync_out  : out std_logic; -- negative logic
-  h_addr_out  : out integer range 0 to 512;
-  v_addr_out  : out integer range 0 to 1024
+  h_addr_out  : out integer range 0 to 511;
+  v_addr_out  : out integer range 0 to 1023
 );
 end VideoTimingGen;
 
