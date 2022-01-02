@@ -11,21 +11,27 @@ architecture SIM of ChiinaDazzler_TB is
   component ChiinaDazzler is
     PORT
     (
-      CLK :  IN  STD_LOGIC;
-      RESET :  IN  STD_LOGIC;
-      HSync :  OUT  STD_LOGIC;
-      VSync :  OUT  STD_LOGIC;
-      R : OUT STD_LOGIC;
-      G : OUT STD_LOGIC;
-      B : OUT STD_LOGIC
+      clk_in :  in  std_logic;
+      reset_in :  in  std_logic;
+      hsync_out :  out  std_logic;
+      vsync_out :  out  std_logic;
+      r_out :  out  std_logic;
+      g_out :  out  std_logic;
+      b_out :  out  std_logic
     );
   end component;
 
   signal T_CLK, T_RESET, T_HSync, T_VSync, T_R, T_G, T_B: std_logic;
 
 begin
-  U01:ChiinaDazzler port map(CLK => T_CLK, RESET => T_RESET, HSync => T_HSync, VSync => T_VSync,
-                        R => T_R, G => T_G, B => T_B);
+  U01 : ChiinaDazzler
+  port map(
+            clk_in => T_CLK,
+            reset_in => T_RESET,
+            hsync_out => T_HSync,
+            vsync_out => T_VSync,
+            r_out => T_R, g_out => T_G, b_out => T_B
+          );
   process
   begin
     T_CLK <= '0'; wait for 31.25 ns; --16MHz clock
@@ -41,3 +47,4 @@ begin
     severity Failure;
   end process;
 end SIM;
+
