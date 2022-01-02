@@ -3,6 +3,8 @@
 -- This VHDL source is the top level module.
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.std_logic_unsigned.all;
+use ieee.std_logic_arith.all;
 
 entity ChiinaDazzler is
   port
@@ -27,12 +29,18 @@ architecture RTL of ChiinaDazzler is
           v_blank_out : out std_logic;
           h_sync_out : out std_logic;
           v_sync_out : out std_logic;
-          h_addr_out : out std_logic_vector(9 downto 0);
-          v_addr_out : out std_logic_vector(10 downto 0)
+          h_addr_out  : out integer range 0 to 512;
+          v_addr_out  : out integer range 0 to 1024
         );
   end component;
 
   signal  hblank, vblank  :  std_logic;
+  signal haddr  : integer range 0 to 512;
+  signal vaddr  : integer range 0 to 1024;
+
+  -- "cannot associate individually with open"
+  --signal haddr_float : std_logic_vector(1 downto 0);
+  --signal vaddr_float : std_logic_vector(0 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -41,12 +49,14 @@ begin
            h_blank_out => hblank,
            v_blank_out => vblank,
            h_sync_out => hsync_out,
-           v_sync_out => vsync_out
+           v_sync_out => vsync_out,
+           h_addr_out => haddr,
+           v_addr_out => vaddr
          );
 
-  r_out <= '0';
-  g_out <= hblank and vblank;
-  b_out <= '0';
+  r_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(5);
+  g_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(2);
+  b_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(0);
 
 end RTL;
 
