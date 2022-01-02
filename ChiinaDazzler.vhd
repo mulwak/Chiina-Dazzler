@@ -34,13 +34,9 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
-  signal  hblank, vblank  :  std_logic;
+  signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal haddr  : integer range 0 to 512;
   signal vaddr  : integer range 0 to 1024;
-
-  -- "cannot associate individually with open"
-  --signal haddr_float : std_logic_vector(1 downto 0);
-  --signal vaddr_float : std_logic_vector(0 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -48,15 +44,28 @@ begin
            reset_in => reset_in,
            h_blank_out => hblank,
            v_blank_out => vblank,
-           h_sync_out => hsync_out,
-           v_sync_out => vsync_out,
+           h_sync_out => hsync,
+           v_sync_out => vsync,
            h_addr_out => haddr,
            v_addr_out => vaddr
          );
 
-  r_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(5);
-  g_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(2);
-  b_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(0);
+  process(clk_in)
+  begin
+    if(clk_in'event and clk_in = '1')then
+      hsync_out <= hsync;
+      vsync_out <= vsync;
+      if(conv_std_logic_vector(vaddr,10)(6) = '1')then
+        r_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(5);
+        g_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(2);
+        b_out <= hblank and vblank and conv_std_logic_vector(haddr,9)(0);
+      else
+        r_out <= hblank and vblank and not(conv_std_logic_vector(haddr,9)(5));
+        g_out <= hblank and vblank and not(conv_std_logic_vector(haddr,9)(2));
+        b_out <= hblank and vblank and not(conv_std_logic_vector(haddr,9)(0));
+      end if;
+    end if;
+  end process;
 
 end RTL;
 

@@ -24,7 +24,7 @@ architecture SIM of ChiinaDazzler_TB is
   signal T_CLK, T_RESET, T_HSync, T_VSync, T_R, T_G, T_B: std_logic;
 
 begin
-  U01 : ChiinaDazzler
+  U02 : ChiinaDazzler
   port map(
             clk_in => T_CLK,
             reset_in => T_RESET,
@@ -41,7 +41,7 @@ begin
   process
   begin
     T_RESET <= '0'; wait for 200 ns;
-    T_RESET <= '1'; wait for 150 ms;
+    T_RESET <= '1'; wait for 20 ms;
     assert false
     report "Simulation Complete!"
     severity Failure;
