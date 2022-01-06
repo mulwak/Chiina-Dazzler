@@ -51,34 +51,50 @@ begin
            v_addr_out => vaddr
          );
 
-  process(vsync)
-  begin
-    if(vsync'event and vsync = '0')then
-      if(ugoki_reg = 255)then
-        ugoki_reg <= 0;
-      else
-        ugoki_reg <= ugoki_reg+1;
-      end if;
-    end if;
-  end process;
-
-
+  -- edge test
   process(clk_in)
   begin
     if(clk_in'event and clk_in = '1')then
       hsync_out <= hsync;
       vsync_out <= vsync;
-      if(conv_std_logic_vector(vaddr,10)(6) = '1')then
-        r_out <= hblank and vblank and conv_std_logic_vector(haddr+ugoki_reg,9)(5);
-        g_out <= hblank and vblank and conv_std_logic_vector(haddr+ugoki_reg,9)(2);
-        b_out <= hblank and vblank and conv_std_logic_vector(haddr+ugoki_reg,9)(0);
-      else
-        r_out <= hblank and vblank and not(conv_std_logic_vector(haddr+ugoki_reg,9)(5));
-        g_out <= hblank and vblank and not(conv_std_logic_vector(haddr+ugoki_reg,9)(2));
-        b_out <= hblank and vblank and not(conv_std_logic_vector(haddr+ugoki_reg,9)(0));
+      if(hblank = '1' and vblank = '1')then -- valid
+        g_out <= '1';
+
+        case vaddr is
+          when 0 to 15 | 767 downto 753 => -- top or bottom
+            b_out <= '1';
+
+            if vaddr=0 or vaddr=1 or vaddr=2 or vaddr=3 or
+              vaddr=767 or vaddr=766 or vaddr=765 or vaddr=764 then
+              r_out <= '1';
+            else
+              r_out <= '0';
+            end if;
+
+          when others=>
+
+            case haddr is
+              when 0 to 3 | 255 downto 252 => -- left or right
+                b_out <= '1';
+
+                if haddr=0 or haddr=255 then
+                  r_out <= '1';
+                else
+                  r_out <= '0';
+                end if;
+
+              when others=>
+                b_out <= '0';
+            end case;
+
+        end case;
+      else -- not valid
+        r_out <= '0';
+        g_out <= '0';
+        b_out <= '0';
       end if;
     end if;
   end process;
 
-end RTL;
+  end RTL;
 
