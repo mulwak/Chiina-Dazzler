@@ -22,14 +22,14 @@ architecture RTL of VideoTimingGen is
   -- clock length
   -- H
   constant H_VALID : integer := 256;
-  constant H_FRONT : integer := 6;
-  constant H_SYNC : integer := 34;
-  constant H_BACK : integer := 35;
+  constant H_FRONT : integer := 7;
+  constant H_SYNC : integer := 35;
+  constant H_BACK : integer := 40;
   -- V
   constant V_VALID : integer := 768;
   constant V_FRONT : integer := 3;
   constant V_SYNC : integer := 6;
-  constant V_BACK : integer := 29;
+  constant V_BACK : integer := 28;
 
   signal h_cnt_reg  : integer range 0 to (H_VALID+H_FRONT+H_SYNC+H_BACK-1); -- 0~331 9bit counter
   signal v_cnt_reg  : integer range 0 to (V_VALID+V_FRONT+V_SYNC+V_BACK-1); -- 0~806 10bit counter
@@ -51,10 +51,12 @@ begin
         if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
           h_blank_out <= '1';
           h_cnt_reg <= 0;
+          h_addr_out <= 0; -- wasureteta
           -- end of v back
           if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
             v_blank_out <= '1';
             v_cnt_reg <= 0;
+          v_addr_out <= 0; -- wasureteta
           else
             -- v count (in end of h back)
             v_cnt_reg <= v_cnt_reg+1;
