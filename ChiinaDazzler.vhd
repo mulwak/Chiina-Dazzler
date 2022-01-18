@@ -3,8 +3,9 @@
 -- This VHDL source is the top level module.
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_unsigned.all;
+--use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 entity ChiinaDazzler is
   port
@@ -37,7 +38,7 @@ architecture RTL of ChiinaDazzler is
   signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal haddr  : integer range 0 to 511;
   signal vaddr  : integer range 0 to 1023;
-  signal ugoki_reg  : integer range 0 to 255;
+  signal flame_cnt_reg  : integer range 0 to 3;
 
 begin
   U01 : VideoTimingGen
@@ -51,50 +52,102 @@ begin
            v_addr_out => vaddr
          );
 
-  -- edge test
+  -- color mix test
   process(clk_in)
   begin
     if(clk_in'event and clk_in = '1')then
-      hsync_out <= hsync;
-      vsync_out <= vsync;
-      if(hblank = '1' and vblank = '1')then -- valid
-        g_out <= '1';
 
-        case vaddr is
-          when 0 to 15 | 767 downto 753 => -- top or bottom
-            b_out <= '1';
+      -- reset
+      if(reset_in = '0')then
+        flame_cnt_reg <= 0;
+      else
 
-            if vaddr=0 or vaddr=1 or vaddr=2 or vaddr=3 or
-              vaddr=767 or vaddr=766 or vaddr=765 or vaddr=764 then
-              r_out <= '1';
-            else
-              r_out <= '0';
-            end if;
+        hsync_out <= hsync;
+        vsync_out <= vsync;
 
-          when others=>
+        if(vaddr = 767 and haddr = 255)then
 
-            case haddr is
-              when 0 to 3 | 255 downto 252 => -- left or right
-                b_out <= '1';
+          -- count up
+          if(flame_cnt_reg = 3)then
+            flame_cnt_reg <= 0;
+          else
+            flame_cnt_reg <= flame_cnt_reg+1;
+          end if;
+        end if;
 
-                if haddr=0 or haddr=255 then
-                  r_out <= '1';
-                else
-                  r_out <= '0';
-                end if;
+        if(hblank = '1' and vblank = '1')then -- valid
 
-              when others=>
+          case vaddr is
+
+            when 0 to 255 => -- line mix
+              if(std_logic_vector(to_unsigned(vaddr,2)) = "00")then
+                r_out <= '1';
+                g_out <= '0';
                 b_out <= '0';
-            end case;
+              elsif(std_logic_vector(to_unsigned(vaddr,2)) = "01")then
+                r_out <= '0';
+                g_out <= '1';
+                b_out <= '0';
+              elsif(std_logic_vector(to_unsigned(vaddr,2)) = "10")then
+                r_out <= '0';
+                g_out <= '0';
+                b_out <= '1';
+              else
+                r_out <= '1';
+                g_out <= '1';
+                b_out <= '1';
+              end if;
 
-        end case;
-      else -- not valid
-        r_out <= '0';
-        g_out <= '0';
-        b_out <= '0';
+            when 256 to 511 => -- time mix
+              case flame_cnt_reg is
+                when 0 =>
+                  r_out <= '1';
+                  g_out <= '0';
+                  b_out <= '0';
+                when 1 =>
+                  r_out <= '0';
+                  g_out <= '1';
+                  b_out <= '0';
+                when 2 =>
+                  r_out <= '0';
+                  g_out <= '0';
+                  b_out <= '1';
+                when 3 =>
+                  r_out <= '1';
+                  g_out <= '1';
+                  b_out <= '1';
+                when others =>
+              end case;
+
+            when others => -- double mix
+              if(std_logic_vector(to_unsigned(vaddr+flame_cnt_reg,2)) = "00")then
+                r_out <= '1';
+                g_out <= '0';
+                b_out <= '0';
+              elsif(std_logic_vector(to_unsigned(vaddr+flame_cnt_reg,2)) = "01")then
+                r_out <= '0';
+                g_out <= '1';
+                b_out <= '0';
+              elsif(std_logic_vector(to_unsigned(vaddr+flame_cnt_reg,2)) = "10")then
+                r_out <= '0';
+                g_out <= '0';
+                b_out <= '1';
+              else
+                r_out <= '1';
+                g_out <= '1';
+                b_out <= '1';
+              end if;
+
+          end case;
+
+        else -- not valid
+          r_out <= '0';
+          g_out <= '0';
+          b_out <= '0';
+        end if;
       end if;
     end if;
   end process;
 
-  end RTL;
+end RTL;
 
