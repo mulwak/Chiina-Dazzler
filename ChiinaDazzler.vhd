@@ -15,7 +15,11 @@ entity ChiinaDazzler is
     vsync_out :  out  std_logic;
     r_out :  out  std_logic;
     g_out :  out  std_logic;
-    b_out :  out  std_logic
+    b_out :  out  std_logic;
+
+    strb_mpu_in : in std_logic;
+    cs_mpu_in : in std_logic;
+    data_mpu_in : in std_logic_vector(7 downto 0)
   );
 end ChiinaDazzler;
 
@@ -34,10 +38,27 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
+  component testram is
+    port(
+          address: IN STD_LOGIC_VECTOR (3 DOWNTO 0);
+          data    : IN STD_LOGIC_VECTOR (11 DOWNTO 0);
+          we    : IN STD_LOGIC  := '1';
+          q    : OUT STD_LOGIC_VECTOR (11 DOWNTO 0)
+        );
+  end component;
+
   signal  hblank, vblank, hsync, vsync  :  std_logic;
-  signal haddr  : integer range 0 to 511;
-  signal vaddr  : integer range 0 to 1023;
-  signal ugoki_reg  : integer range 0 to 255;
+  signal  haddr  : integer range 0 to 511;
+  signal  vaddr  : integer range 0 to 1023;
+
+  signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
+  signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
+  signal  mpu_test_reg  : std_logic_vector(7 downto 0);
+
+  signal  ram_address    : STD_LOGIC_VECTOR (3 DOWNTO 0);
+  signal  ram_data    : STD_LOGIC_VECTOR (11 DOWNTO 0);
+  signal  ram_we    : STD_LOGIC  ;
+  signal  ram_q    : sTD_LOGIC_VECTOR (11 DOWNTO 0);
 
 begin
   U01 : VideoTimingGen
@@ -51,50 +72,71 @@ begin
            v_addr_out => vaddr
          );
 
+  U02 : testram
+  port map(
+            address => ram_address,
+            data => ram_data,
+            we => ram_we,
+            q => ram_q
+          );
+
+  -- input mpu data
+  process(strb_mpu_in,cs_mpu_in,reset_in)
+  begin
+    if(reset_in = '0')then -- async reset
+      data_buff_reg0 <= "00000000";
+    elsif(strb_mpu_in'event and strb_mpu_in = '1' and cs_mpu_in = '0')then -- strb edge and cs
+      if(reset_in = '1')then
+        data_buff_reg0 <= data_mpu_in;
+      end if;
+    end if; -- end strb edge
+  end process;
+
   -- edge test
   process(clk_in)
   begin
     if(clk_in'event and clk_in = '1')then
-      hsync_out <= hsync;
-      vsync_out <= vsync;
-      if(hblank = '1' and vblank = '1')then -- valid
-        g_out <= '1';
+      if(reset_in = '0')then
+        mpu_test_reg <= "00000000";
+        --data_buff_reg0 <= "00000000";
+        data_buff_reg1 <= "00000000";
+      else -- not reset
+        data_buff_reg1 <= data_buff_reg0;
+        mpu_test_reg <= data_buff_reg1;
+        hsync_out <= hsync;
+        vsync_out <= vsync;
+        if(hblank = '1' and vblank = '1')then -- valid
+          g_out <= '1';
+          b_out <= '1';
 
-        case vaddr is
-          when 0 to 15 | 767 downto 753 => -- top or bottom
-            b_out <= '1';
-
-            if vaddr=0 or vaddr=1 or vaddr=2 or vaddr=3 or
-              vaddr=767 or vaddr=766 or vaddr=765 or vaddr=764 then
-              r_out <= '1';
-            else
+          case haddr is
+            when 0 to 31 =>
+              r_out <= mpu_test_reg(7);
+            when 32 to 63 =>
+              r_out <= mpu_test_reg(6);
+            when 64 to 95 =>
+              r_out <= mpu_test_reg(5);
+            when 96 to 127 =>
+              r_out <= mpu_test_reg(4);
+            when 128 to 159 =>
+              r_out <= mpu_test_reg(3);
+            when 160 to 191 =>
+              r_out <= mpu_test_reg(2);
+            when 192 to 223 =>
+              r_out <= mpu_test_reg(1);
+            when 224 to 255 =>
+              r_out <= mpu_test_reg(0);
+            when others =>
               r_out <= '0';
-            end if;
-
-          when others=>
-
-            case haddr is
-              when 0 to 3 | 255 downto 252 => -- left or right
-                b_out <= '1';
-
-                if haddr=0 or haddr=255 then
-                  r_out <= '1';
-                else
-                  r_out <= '0';
-                end if;
-
-              when others=>
-                b_out <= '0';
-            end case;
-
-        end case;
-      else -- not valid
-        r_out <= '0';
-        g_out <= '0';
-        b_out <= '0';
+          end case; -- end about haddr
+        else -- not valid
+          r_out <= '0';
+          g_out <= '0';
+          b_out <= '0';
+        end if;
       end if;
     end if;
   end process;
 
-  end RTL;
+end RTL;
 
