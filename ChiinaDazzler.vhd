@@ -40,15 +40,6 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
-  component testram is
-    port(
-          address: IN STD_LOGIC_VECTOR (3 DOWNTO 0);
-          data    : IN STD_LOGIC_VECTOR (11 DOWNTO 0);
-          we    : IN STD_LOGIC  := '1';
-          q    : OUT STD_LOGIC_VECTOR (11 DOWNTO 0)
-        );
-  end component;
-
   signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
   signal  vaddr  : integer range 0 to 1023;
@@ -56,11 +47,6 @@ architecture RTL of ChiinaDazzler is
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
   signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
   signal  mpu_test_reg  : std_logic_vector(7 downto 0);
-
-  signal  ram_address    : STD_LOGIC_VECTOR (3 DOWNTO 0);
-  signal  ram_data    : STD_LOGIC_VECTOR (11 DOWNTO 0);
-  signal  ram_we    : STD_LOGIC  ;
-  signal  ram_q    : STD_LOGIC_VECTOR (11 DOWNTO 0);
 
 begin
   U01 : VideoTimingGen
@@ -73,14 +59,6 @@ begin
            h_addr_out => haddr,
            v_addr_out => vaddr
          );
-
-  U02 : testram
-  port map(
-            address => ram_address,
-            data => ram_data,
-            we => ram_we,
-            q => ram_q
-          );
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
