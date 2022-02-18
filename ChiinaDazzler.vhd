@@ -19,7 +19,8 @@ entity ChiinaDazzler is
 
     strb_mpu_in : in std_logic;
     cs_mpu_in : in std_logic;
-    data_mpu_in : in std_logic_vector(7 downto 0)
+    data_mpu_in : in std_logic_vector(7 downto 0);
+    addr_mpu_in : in std_logic_vector(2 downto 0)
   );
 end ChiinaDazzler;
 
