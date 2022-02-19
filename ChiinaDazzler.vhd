@@ -47,6 +47,15 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
+  component testram is
+    port(
+          address : in std_logic_vector(3 downto 0);
+          data  : in std_logic_vector(11 downto 0);
+          we  : in std_logic := '1';
+          q : out std_logic_vector(11 downto 0)
+    );
+  end component;
+
   --crtc signals
   signal  heblank, hblank, veblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
@@ -58,6 +67,11 @@ architecture RTL of ChiinaDazzler is
 
   signal  vram_scan_addr  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
+
+  --colorpallet signals
+  signal  cp_addr : std_logic_vector(3 downto 0);
+  signal  cp_data, cp_q : std_logic_vector(11 downto 0);
+  signal  cp_we : std_logic;
 
   --regs
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
@@ -94,6 +108,13 @@ begin
            h_addr_out => haddr,
            v_addr_out => vaddr
          );
+
+  U02 : testram
+  port map( address => cp_addr,
+            data => cp_data,
+            we => cp_we,
+            q => cp_q
+          );
 
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
@@ -149,6 +170,7 @@ begin
         vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
+        cp_we <= '1';
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
@@ -176,13 +198,14 @@ begin
         if(heblank = '1' and veblank = '1')then -- valid address
           case state is
             when "00" =>
-              color_lut_test_reg <= data_vram_io(7 downto 4);
+              --color_lut_test_reg <= data_vram_io(7 downto 4);
+              cp_addr <= data_vram_io(7 downto 4);
               lut_que_reg0 <= data_vram_io(3 downto 0);
 
               addr_vram_out <= vram_scan_addr;
               --data_vram_io <= "ZZZZZZZZ";
             when "01" =>
-              color_lut_test_reg <= lut_que_reg0;
+              cp_addr <= lut_que_reg0;
               lut_que_reg1 <= data_vram_io(7 downto 4);
               lut_que_reg2 <= data_vram_io(3 downto 0);
 
@@ -196,7 +219,7 @@ begin
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>
-              color_lut_test_reg <= lut_que_reg1;
+              cp_addr <= lut_que_reg1;
 
               --data_vram_io <= write_data_reg;
               nedge_write_flag_reg <= '0';
@@ -216,13 +239,13 @@ begin
         if(hblank = '1' and vblank = '1')then -- valid timing
           case state is
             when "11" =>
-              color_lut_test_reg <= lut_que_reg2;
+              cp_addr <= lut_que_reg2;
             when others =>
               -- ???
           end case;
-          r_out <= color_lut_test_reg(2);
-          g_out <= color_lut_test_reg(1);
-          b_out <= color_lut_test_reg(0);
+          r_out <= cp_q(2);
+          g_out <= cp_q(1);
+          b_out <= cp_q(0);
         else -- not valid
           r_out <= '0';
           g_out <= '0';
