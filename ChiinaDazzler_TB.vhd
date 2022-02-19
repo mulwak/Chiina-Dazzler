@@ -21,13 +21,24 @@ architecture SIM of ChiinaDazzler_TB is
 
       strb_mpu_in : in std_logic;
       cs_mpu_in : in std_logic;
-      data_mpu_in : in std_logic_vector(7 downto 0)
-    );
+      data_mpu_in : in std_logic_vector(7 downto 0);
+      addr_mpu_in : in std_logic_vector(2 downto 0);
+
+    -- VRAM interface
+      oe_vram_out : out std_logic;
+      we_vram_out : out std_logic;
+      data_vram_io : inout std_logic_vector(7 downto 0);
+      addr_vram_out : out std_logic_vector(16 downto 0)
+  );
   end component;
 
   signal T_CLK, T_RESET, T_HSync, T_VSync, T_R, T_G, T_B: std_logic;
   signal T_STRB, T_CS : std_logic;
   signal T_DATA : std_logic_vector(7 downto 0);
+  signal T_ADDR : std_logic_vector(2 downto 0);
+  signal T_VRAMOE, T_VRAMWE : std_logic;
+  signal T_VRAMDATA : std_logic_vector(7 downto 0);
+  signal T_VRAMADDR : std_logic_vector(16 downto 0);
 
 begin
   U02 : ChiinaDazzler
@@ -39,7 +50,12 @@ begin
             r_out => T_R, g_out => T_G, b_out => T_B,
             strb_mpu_in => T_STRB,
             cs_mpu_in => T_CS,
-            data_mpu_in => T_DATA
+            data_mpu_in => T_DATA,
+            addr_mpu_in => T_ADDR,
+            oe_vram_out => T_VRAMOE,
+            we_vram_out => T_VRAMWE,
+            data_vram_io => T_VRAMDATA,
+            addr_vram_out => T_VRAMADDR
           );
   process
   begin
@@ -52,6 +68,7 @@ begin
     T_STRB <= '1';
     T_CS <= '1';
     T_DATA <= "10000000";
+    T_ADDR <= "000";
     wait for 10 ns;
     T_RESET <= '0'; wait for 200 ns;
     T_RESET <= '1'; wait for 25 ms;
