@@ -59,6 +59,9 @@ architecture RTL of ChiinaDazzler is
   signal  vram_scan_addr  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
 
+  --config signals
+  signal  UPDOWN_sig, RCSEC_sig : std_logic;
+
   --regs
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
   signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
@@ -68,8 +71,8 @@ architecture RTL of ChiinaDazzler is
   signal  cmd_flag_reg1 : std_logic;
   signal  cmd_flag_reg2 : std_logic;
 
-  signal  write_data_reg  : std_logic_vector(7 downto 0);
   signal  write_flag_reg  : std_logic;
+  signal  nedge_write_flag_reg  : std_logic;
 
   signal  lut_que_reg0 : std_logic_vector(3 downto 0);
   signal  lut_que_reg1 : std_logic_vector(3 downto 0);
@@ -77,11 +80,12 @@ architecture RTL of ChiinaDazzler is
   signal  vram_writecursor_reg : std_logic_vector(16 downto 0);
   signal  read_frame_reg  : std_logic_vector(1 downto 0);
 
-  signal  nedge_write_flag_reg  : std_logic;
-
   type regfile_type is array (15 downto 0) of std_logic_vector(11 downto 0);
   signal color_pallet_regfile  : regfile_type;
   signal color_pallet_addr_reg  : integer range 0 to 15;
+
+  --regs (visible
+  signal  CFG_vreg, WDBF_vreg : std_logic_vector(7 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -106,6 +110,9 @@ begin
   vram_scan_addr(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr(0) <= haddr_vec(0);
 
+  UPDOWN_sig <= CFG_vreg(0);
+  UPDOWN_sig <= CFG_vreg(1);
+
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
   begin
@@ -125,20 +132,22 @@ begin
   process(clk_in)
   begin
 
-    if(clk_in'event and clk_in = '0')then -- banned negative edge!
+    -- negative edge
+    if(clk_in'event and clk_in = '0')then
       if(reset_in = '0')then
       else
         if(nedge_write_flag_reg = '1')then
-          data_vram_io <= write_data_reg;
+          data_vram_io <= WDBF_vreg;
         else
           data_vram_io <= "ZZZZZZZZ";
         end if;
       end if;
     end if;
 
+    -- positive edge
     if(clk_in'event and clk_in = '1')then
       if(reset_in = '0')then
-        write_data_reg  <= "00000000";
+        WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
         cmd_flag_reg1 <= '0';
         cmd_flag_reg2 <= '0';
@@ -181,15 +190,26 @@ begin
         if(cmd_flag_reg2 = '1')then
           cmd_flag_reg2 <= '0';
           case addr_buff_reg1 is
+            -- CMD
             when "000" =>
-              write_data_reg <= data_buff_reg1;
+              -- cursor reset command
+              if(data_buff_reg1 = "00000000")then
+                vram_writecursor_reg <= "00000000000000000";
+              end if;
+            -- CFG
+            when "001" =>
+              CFG_vreg <= data_buff_reg1;
+            -- WDBF
+            when "100" =>
+              WDBF_vreg <= data_buff_reg1;
               write_flag_reg <= '1';
             when others =>
           end case;
         end if;
 
 
-        if(heblank = '1' and veblank = '1')then -- valid address
+        -- true (sync addr nums) screen area
+        if(heblank = '1' and veblank = '1')then
           case state is
             when "00" =>
               -- load 2
@@ -209,7 +229,20 @@ begin
                 nedge_write_flag_reg <= '1';
                 we_vram_out <= '0'; -- write enable
                 write_flag_reg <= '0';
-                vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+
+                if(UPDOWN_sig = '0')then
+                  if(RCSEC_sig = '0')then
+                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                  else
+                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+"0000000000001000");
+                  end if;
+                else
+                  if(RCSEC_sig = '0')then
+                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-1);
+                  else
+                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-"0000000000001000");
+                  end if;
+                end if;
               end if;
 
               oe_vram_out <= '1'; -- out disable
@@ -228,7 +261,8 @@ begin
           end case;
         end if;
 
-        if(hblank = '1' and vblank = '1')then -- valid timing
+        -- delayed screen area
+        if(hblank = '1' and vblank = '1')then
           case state is
             when "11" =>
               -- load 1
