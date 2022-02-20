@@ -86,6 +86,8 @@ begin
     T_STRB <= '0'; wait for 500 ns;
     T_DATA <= "00000010"; wait for 251 ns;
     T_STRB <= '1'; wait for 500 ns;
+    T_VRAMDATA <= "ZZZZZZZZ"; wait for 800 ns;
+    T_VRAMDATA <= "10100101";
 
     wait for 25 ms;
 
