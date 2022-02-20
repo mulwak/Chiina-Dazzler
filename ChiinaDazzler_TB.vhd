@@ -65,6 +65,7 @@ begin
 
   process
   begin
+    T_VRAMDATA <= "00010010";
     T_STRB <= '1';
     T_CS <= '1';
     T_DATA <= "10000000";

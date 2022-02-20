@@ -69,11 +69,6 @@ architecture RTL of ChiinaDazzler is
   signal  vram_scan_addr  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
 
-  --colorpallet signals
-  signal  cp_addr : std_logic_vector(3 downto 0);
-  signal  cp_data, cp_q : std_logic_vector(11 downto 0);
-  signal  cp_we : std_logic;
-
   --regs
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
   signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
@@ -86,7 +81,6 @@ architecture RTL of ChiinaDazzler is
   signal  write_data_reg  : std_logic_vector(7 downto 0);
   signal  write_flag_reg  : std_logic;
 
-  signal  color_lut_test_reg : std_logic_vector(3 downto 0);
   signal  lut_que_reg0 : std_logic_vector(3 downto 0);
   signal  lut_que_reg1 : std_logic_vector(3 downto 0);
   signal  lut_que_reg2 : std_logic_vector(3 downto 0);
@@ -95,6 +89,10 @@ architecture RTL of ChiinaDazzler is
 
   signal  nedge_write_flag_reg  : std_logic;
   signal  nedge_data_reg  : std_logic_vector(7 downto 0);
+
+  type regfile_type is array (15 downto 0) of std_logic_vector(11 downto 0);
+  signal color_pallet_regfile  : regfile_type;
+  signal color_pallet_addr  : integer range 0 to 15;
 
 begin
   U01 : VideoTimingGen
@@ -109,14 +107,6 @@ begin
            h_addr_out => haddr,
            v_addr_out => vaddr
          );
-
-  U02 : ColorPallet
-  port map( clk_in  =>  clk_in,
-            addr_in => cp_addr,
-            data_in => cp_data,
-            we_in => cp_we,
-            data_out => cp_q
-          );
 
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
@@ -165,14 +155,28 @@ begin
         cmd_flag_reg2 <= '0';
         data_buff_reg1 <= "00000000";
         addr_buff_reg1 <= "000";
-        color_lut_test_reg <= "0000";
         lut_que_reg0 <= "0000";
         lut_que_reg1 <= "0000";
         lut_que_reg2 <= "0000";
         vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
-        cp_we <= '1';
+        color_pallet_regfile(0) <= "000000000000";
+        color_pallet_regfile(1) <= "000000001111";
+        color_pallet_regfile(2) <= "000011110000";
+        color_pallet_regfile(3) <= "111100000000";
+        color_pallet_regfile(4) <= "111111111111";
+        color_pallet_regfile(5) <= "000000000000";
+        color_pallet_regfile(6) <= "000000001111";
+        color_pallet_regfile(7) <= "000011110000";
+        color_pallet_regfile(8) <= "111100000000";
+        color_pallet_regfile(9) <= "111111111111";
+        color_pallet_regfile(10) <= "000000000000";
+        color_pallet_regfile(11) <= "000000001111";
+        color_pallet_regfile(12) <= "000011110000";
+        color_pallet_regfile(13) <= "111100000000";
+        color_pallet_regfile(14) <= "111111111111";
+        color_pallet_regfile(15) <= "111111111111";
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
@@ -200,14 +204,13 @@ begin
         if(heblank = '1' and veblank = '1')then -- valid address
           case state is
             when "00" =>
-              --color_lut_test_reg <= data_vram_io(7 downto 4);
-              cp_addr <= data_vram_io(7 downto 4);
+              color_pallet_addr <= to_integer(unsigned(data_vram_io(7 downto 4)));
               lut_que_reg0 <= data_vram_io(3 downto 0);
 
               addr_vram_out <= vram_scan_addr;
               --data_vram_io <= "ZZZZZZZZ";
             when "01" =>
-              cp_addr <= lut_que_reg0;
+              color_pallet_addr <= to_integer(unsigned(lut_que_reg0));
               lut_que_reg1 <= data_vram_io(7 downto 4);
               lut_que_reg2 <= data_vram_io(3 downto 0);
 
@@ -221,15 +224,13 @@ begin
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>
-              cp_addr <= lut_que_reg1;
+              color_pallet_addr <= to_integer(unsigned(lut_que_reg1));
 
               --data_vram_io <= write_data_reg;
               nedge_write_flag_reg <= '0';
 
               we_vram_out <= '1'; -- write disable == write trig
             when "11" =>
-              --color_lut_test_reg <= lut_que_reg2;
-
               addr_vram_out <= vram_scan_addr;
               --data_vram_io <= "ZZZZZZZZ";
               oe_vram_out <= '0'; -- out enable
@@ -241,13 +242,13 @@ begin
         if(hblank = '1' and vblank = '1')then -- valid timing
           case state is
             when "11" =>
-              cp_addr <= lut_que_reg2;
+              color_pallet_addr <= to_integer(unsigned(lut_que_reg2));
             when others =>
               -- ???
           end case;
-          r_out <= cp_q(2);
-          g_out <= cp_q(1);
-          b_out <= cp_q(0);
+          r_out <= color_pallet_regfile(color_pallet_addr)(11);
+          g_out <= color_pallet_regfile(color_pallet_addr)(7);
+          b_out <= color_pallet_regfile(color_pallet_addr)(3);
         else -- not valid
           r_out <= '0';
           g_out <= '0';
