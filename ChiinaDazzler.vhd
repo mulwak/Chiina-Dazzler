@@ -47,12 +47,13 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
-  component testram is
+  component ColorPallet is
     port(
-          address : in std_logic_vector(3 downto 0);
-          data  : in std_logic_vector(11 downto 0);
-          we  : in std_logic := '1';
-          q : out std_logic_vector(11 downto 0)
+          clk_in  : in std_logic;
+          we_in  : in std_logic;
+          addr_in : in std_logic_vector(3 downto 0);
+          data_in  : in std_logic_vector(11 downto 0);
+          data_out : out std_logic_vector(11 downto 0)
     );
   end component;
 
@@ -109,11 +110,12 @@ begin
            v_addr_out => vaddr
          );
 
-  U02 : testram
-  port map( address => cp_addr,
-            data => cp_data,
-            we => cp_we,
-            q => cp_q
+  U02 : ColorPallet
+  port map( clk_in  =>  clk_in,
+            addr_in => cp_addr,
+            data_in => cp_data,
+            we_in => cp_we,
+            data_out => cp_q
           );
 
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
