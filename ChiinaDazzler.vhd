@@ -152,19 +152,19 @@ begin
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <= "000000000000";
-        color_pallet_regfile(1) <= "000000001111";
-        color_pallet_regfile(2) <= "000011110000";
-        color_pallet_regfile(3) <= "111100000000";
-        color_pallet_regfile(4) <= "111111111111";
-        color_pallet_regfile(5) <= "000000000000";
-        color_pallet_regfile(6) <= "000000001111";
-        color_pallet_regfile(7) <= "000011110000";
-        color_pallet_regfile(8) <= "111100000000";
+        color_pallet_regfile(1) <= "000000000001";
+        color_pallet_regfile(2) <= "000000000010";
+        color_pallet_regfile(3) <= "000000000011";
+        color_pallet_regfile(4) <= "000000000100";
+        color_pallet_regfile(5) <= "000000000101";
+        color_pallet_regfile(6) <= "000000000110";
+        color_pallet_regfile(7) <= "000000000111";
+        color_pallet_regfile(8) <= "111111111111";
         color_pallet_regfile(9) <= "111111111111";
-        color_pallet_regfile(10) <= "000000000000";
-        color_pallet_regfile(11) <= "000000001111";
-        color_pallet_regfile(12) <= "000011110000";
-        color_pallet_regfile(13) <= "111100000000";
+        color_pallet_regfile(10) <= "111111111111";
+        color_pallet_regfile(11) <= "111111111111";
+        color_pallet_regfile(12) <= "111111111111";
+        color_pallet_regfile(13) <= "111111111111";
         color_pallet_regfile(14) <= "111111111111";
         color_pallet_regfile(15) <= "111111111111";
       else -- not reset
@@ -233,9 +233,9 @@ begin
             when others =>
               -- ???
           end case;
-          r_out <= color_pallet_regfile(color_pallet_addr_reg)(11);
-          g_out <= color_pallet_regfile(color_pallet_addr_reg)(7);
-          b_out <= color_pallet_regfile(color_pallet_addr_reg)(3);
+          r_out <= color_pallet_regfile(color_pallet_addr_reg)(2);
+          g_out <= color_pallet_regfile(color_pallet_addr_reg)(1);
+          b_out <= color_pallet_regfile(color_pallet_addr_reg)(0);
         end if;
 
         if(heblank = '0' and hblank = '1' and state = "01")then
