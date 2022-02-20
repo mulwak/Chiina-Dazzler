@@ -78,7 +78,6 @@ architecture RTL of ChiinaDazzler is
   signal  read_frame_reg  : std_logic_vector(1 downto 0);
 
   signal  nedge_write_flag_reg  : std_logic;
-  signal  nedge_data_reg  : std_logic_vector(7 downto 0);
 
   type regfile_type is array (15 downto 0) of std_logic_vector(11 downto 0);
   signal color_pallet_regfile  : regfile_type;
@@ -185,7 +184,6 @@ begin
             when "000" =>
               write_data_reg <= data_buff_reg1;
               write_flag_reg <= '1';
-              vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
             when others =>
           end case;
         end if;
@@ -194,6 +192,7 @@ begin
         if(heblank = '1' and veblank = '1')then -- valid address
           case state is
             when "00" =>
+              -- load 2
               color_pallet_addr_reg <= to_integer(unsigned(data_vram_io(7 downto 4)));
               lut_que_reg0 <= data_vram_io(3 downto 0);
 
@@ -203,18 +202,21 @@ begin
               lut_que_reg1 <= data_vram_io(7 downto 4);
               lut_que_reg2 <= data_vram_io(3 downto 0);
 
+              -- write 1
               addr_vram_out <= vram_writecursor_reg;
 
               if(write_flag_reg = '1')then
                 nedge_write_flag_reg <= '1';
                 we_vram_out <= '0'; -- write enable
                 write_flag_reg <= '0';
+                vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
               end if;
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>
               color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg1));
 
+              --write 2
               nedge_write_flag_reg <= '0';
 
               we_vram_out <= '1'; -- write disable == write trig
@@ -229,6 +231,7 @@ begin
         if(hblank = '1' and vblank = '1')then -- valid timing
           case state is
             when "11" =>
+              -- load 1
               color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg2));
             when others =>
               -- ???
