@@ -107,11 +107,11 @@ begin
           end case; --- end case about h
         end if; -- end if(end of h)
       end if; -- end reset
-    end if; -- end clk positive edge
     h_blank_delayreg0 <= h_eblank_reg;
     h_blank_delayreg1 <= h_blank_delayreg0;
     v_blank_delayreg0 <= v_eblank_reg;
     v_blank_delayreg1 <= v_blank_delayreg0;
+    end if; -- end clk positive edge
   end process;
 end RTL;
 
