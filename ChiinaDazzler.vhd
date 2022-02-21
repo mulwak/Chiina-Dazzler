@@ -85,7 +85,7 @@ architecture RTL of ChiinaDazzler is
   signal color_pallet_addr_reg  : integer range 0 to 15;
 
   --regs (visible
-  signal  CFG_vreg, WDBF_vreg : std_logic_vector(7 downto 0);
+  signal  WDBF_vreg : std_logic_vector(7 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -109,10 +109,6 @@ begin
   vram_scan_addr(14 downto 7) <= vaddr_vec(9 downto 2);
   vram_scan_addr(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr(0) <= haddr_vec(0);
-
-  UPDOWN_sig <= CFG_vreg(0);
-  RCSEC_sig <= CFG_vreg(1);
-  cursor_config <= UPDOWN_sig & RCSEC_sig;
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -148,7 +144,6 @@ begin
     -- positive edge
     if(clk_in'event and clk_in = '1')then
       if(reset_in = '0')then
-        CFG_vreg <= "00000000";
         --WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
         cmd_flag_reg1 <= '0';
@@ -192,12 +187,19 @@ begin
           case addr_buff_reg1 is
             -- CMD
             when "000" =>
-              if(data_buff_reg1 = "00000000")then -- cursor reset command
-                vram_writecursor_reg <= "00000000000000000";
-              end if;
+              case data_buff_reg1 is
+                -- cursor reset commandis
+                when "00000000" =>
+                  vram_writecursor_reg <= "00000000000000000";
+                when "00000010" =>
+                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                when "00000011" =>
+                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
+                when others =>
+              end case;
             -- CFG
-            when "001" =>
-              CFG_vreg <= data_buff_reg1;
+            --when "001" =>
+              --CFG_vreg <= data_buff_reg1;
             -- WDBF
             when "100" =>
               WDBF_vreg <= data_buff_reg1;
@@ -234,13 +236,7 @@ begin
               nedge_write_flag_reg <= '0';
 
               if(nedge_write_flag_reg = '1')then
-                case cursor_config is
-                  when "00" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-                  when "01" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
-                  when "10" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-1);
-                  when "11" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-128);
-                  when others =>
-                end case;
+                vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
               end if;
 
               we_vram_out <= '1'; -- write disable == write trig
