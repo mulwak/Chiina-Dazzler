@@ -13,9 +13,7 @@ entity ChiinaDazzler is
     reset_in :  in  std_logic;
     hsync_out :  out  std_logic;
     vsync_out :  out  std_logic;
-    r_out :  out  std_logic;
-    g_out :  out  std_logic;
-    b_out :  out  std_logic;
+    rgb_out :  out  std_logic_vector(2 downto 0);
 
     -- MPU interface
     strb_mpu_in : in std_logic;
@@ -55,6 +53,7 @@ architecture RTL of ChiinaDazzler is
   --tmp signals
   signal haddr_vec  : std_logic_vector(8 downto 0);
   signal vaddr_vec  : std_logic_vector(9 downto 0);
+  signal hvblank : std_logic_vector(1 downto 0);
 
   signal  vram_scan_addr  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
@@ -186,8 +185,6 @@ begin
         if(cmd_flag_reg0 = not cmd_flag_reg1)then
           cmd_flag_reg2 <= '1';
         end if;
-        hsync_out <= hsync;
-        vsync_out <= vsync;
 
         -- command processing
         if(cmd_flag_reg2 = '1')then
@@ -215,12 +212,10 @@ begin
           case state is
             when "00" =>
               -- load 2
-              color_pallet_addr_reg <= to_integer(unsigned(data_vram_io(7 downto 4)));
               lut_que_reg0 <= data_vram_io(3 downto 0);
 
               addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr)+"00000000000000001");
             when "01" =>
-              color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg0));
               lut_que_reg1 <= data_vram_io(7 downto 4);
               lut_que_reg2 <= data_vram_io(3 downto 0);
 
@@ -235,8 +230,6 @@ begin
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>
-              color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg1));
-
               --write 2
               nedge_write_flag_reg <= '0';
 
@@ -259,30 +252,32 @@ begin
           end case;
         end if;
 
-        -- delayed screen area
-        if(hblank = '1' and vblank = '1')then
-          case state is
-            when "11" =>
+        case state is
+          when "01" =>
+            color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg0));
+          when "00" =>
+              -- load 2
+            color_pallet_addr_reg <= to_integer(unsigned(data_vram_io(7 downto 4)));
+          when "10" =>
+            color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg1));
+          when "11" =>
               -- load 1
-              color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg2));
-            when others =>
-              -- ???
-          end case;
-          r_out <= color_pallet_regfile(color_pallet_addr_reg)(2);
-          g_out <= color_pallet_regfile(color_pallet_addr_reg)(1);
-          b_out <= color_pallet_regfile(color_pallet_addr_reg)(0);
-        end if;
-
-        if(heblank = '0' and hblank = '1' and state = "01")then
-          r_out <= '0';
-          g_out <= '0';
-          b_out <= '0';
-        end if;
-
+            color_pallet_addr_reg <= to_integer(unsigned(lut_que_reg2));
+          when others =>
+          -- ???
+        end case;
 
       end if;
     end if;
   end process;
+
+  hsync_out <= hsync;
+  vsync_out <= vsync;
+
+  hvblank <= hblank & vblank;
+  with hvblank select
+    rgb_out <= color_pallet_regfile(color_pallet_addr_reg)(2 downto 0) when "11",
+               "000" when others;
 
 end RTL;
 
