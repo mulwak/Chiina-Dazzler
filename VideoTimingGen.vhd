@@ -35,7 +35,14 @@ architecture RTL of VideoTimingGen is
 
   signal h_cnt_reg  : integer range 0 to (H_VALID+H_FRONT+H_SYNC+H_BACK-1); -- 0~331 9bit counter
   signal v_cnt_reg  : integer range 0 to (V_VALID+V_FRONT+V_SYNC+V_BACK-1); -- 0~806 10bit counter
+  signal h_blank_delayreg0, v_blank_delayreg0 : std_logic;
+  signal h_blank_delayreg1, v_blank_delayreg1 : std_logic;
+  signal h_eblank_reg, v_eblank_reg : std_logic;
 begin
+  h_blank_out <= h_blank_delayreg1;
+  v_blank_out <= v_blank_delayreg1;
+  h_earlyblank_out <= h_eblank_reg;
+  v_earlyblank_out <= v_eblank_reg;
   u1:process(clk_in)
   begin
     -- clk positive edge
@@ -44,21 +51,21 @@ begin
       if(reset_in = '0')then
         h_cnt_reg <= 0;
         v_cnt_reg <= 0;
-        h_blank_out <= '0';
-        h_earlyblank_out <= '1';
-        v_blank_out <= '0';
-        v_earlyblank_out <= '1';
-        h_sync_out <= '1';
+        --h_blank_out <= '0';
+        --h_eblank_reg <= '1';
+        --v_blank_out <= '0';
+        v_eblank_reg <= '1';
+        --h_sync_out <= '1';
         v_sync_out <= '1';
       else
         -- end of h back (true)
         if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
           h_cnt_reg <= 0;
-          h_earlyblank_out <= '1';
+          h_eblank_reg <= '1';
           h_addr_out <= 0;
           -- end of v back
           if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
-            v_earlyblank_out <= '1';
+            v_eblank_reg <= '1';
             v_cnt_reg <= 0;
             v_addr_out <= 0;
           else
@@ -68,7 +75,7 @@ begin
             case v_cnt_reg is
               -- end of v valid
               when V_VALID-1 =>
-                v_earlyblank_out <= '0';
+                v_eblank_reg <= '0';
               when others =>
             -- ??
             end case; -- end case about v
@@ -82,15 +89,15 @@ begin
           case h_cnt_reg is
             -- end of h back (delayed)
             when H_DEL-1 =>
-              h_blank_out <= '1';
+              --h_blank_out <= '1';
           -- end of v back
               if(v_cnt_reg = 0) then
-                v_blank_out <= '1';
+                --v_blank_out <= '1';
               else
                 case v_cnt_reg is
               -- end of v valid
                   when V_VALID =>
-                    v_blank_out <= '0';
+                    --v_blank_out <= '0';
 
               -- end of v front
                   when V_VALID+V_FRONT =>
@@ -107,11 +114,11 @@ begin
 
             -- end of h valid (true)
             when H_VALID-1 =>
-              h_earlyblank_out <= '0';
+              h_eblank_reg <= '0';
 
             -- end of h valid
             when H_DEL+H_VALID-1 =>
-              h_blank_out <= '0';
+              --h_blank_out <= '0';
 
             -- end of h front
             when H_DEL+H_VALID+H_FRONT-1 =>
@@ -127,6 +134,10 @@ begin
         end if; -- end if(end of h)
       end if; -- end reset
     end if; -- end clk positive edge
+    h_blank_delayreg0 <= h_eblank_reg;
+    h_blank_delayreg1 <= h_blank_delayreg0;
+    v_blank_delayreg0 <= v_eblank_reg;
+    v_blank_delayreg1 <= v_blank_delayreg0;
   end process;
 end RTL;
 
