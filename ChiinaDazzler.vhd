@@ -61,6 +61,7 @@ architecture RTL of ChiinaDazzler is
 
   --config signals
   signal  UPDOWN_sig, RCSEC_sig : std_logic;
+  signal  cursor_config : std_logic_vector(1 downto 0);
 
   --regs
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
@@ -112,13 +113,14 @@ begin
 
   UPDOWN_sig <= CFG_vreg(0);
   RCSEC_sig <= CFG_vreg(1);
+  cursor_config <= UPDOWN_sig & RCSEC_sig;
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
   begin
     if(reset_in = '0')then -- async reset
-      data_buff_reg0 <= "00000000";
-      addr_buff_reg0 <= "000";
+      --data_buff_reg0 <= "00000000";
+      --addr_buff_reg0 <= "000";
       cmd_flag_reg0 <= '0';
     elsif(strb_mpu_in'event and strb_mpu_in = '1' and cs_mpu_in = '0')then -- strb edge and cs
       if(reset_in = '1')then
@@ -148,16 +150,16 @@ begin
     if(clk_in'event and clk_in = '1')then
       if(reset_in = '0')then
         CFG_vreg <= "00000000";
-        WDBF_vreg  <= "00000000";
+        --WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
         cmd_flag_reg1 <= '0';
         cmd_flag_reg2 <= '0';
-        data_buff_reg1 <= "00000000";
-        addr_buff_reg1 <= "000";
-        lut_que_reg0 <= "0000";
-        lut_que_reg1 <= "0000";
-        lut_que_reg2 <= "0000";
-        vram_writecursor_reg <= "00000000000000000";
+        --data_buff_reg1 <= "00000000";
+        --addr_buff_reg1 <= "000";
+        --lut_que_reg0 <= "0000";
+        --lut_que_reg1 <= "0000";
+        --lut_que_reg2 <= "0000";
+        --vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <= "000000000000";
@@ -193,8 +195,7 @@ begin
           case addr_buff_reg1 is
             -- CMD
             when "000" =>
-              -- cursor reset command
-              if(data_buff_reg1 = "00000000")then
+              if(data_buff_reg1 = "00000000")then -- cursor reset command
                 vram_writecursor_reg <= "00000000000000000";
               end if;
             -- CFG
@@ -226,13 +227,11 @@ begin
               -- write 1
               addr_vram_out <= vram_writecursor_reg;
 
-              nedge_write_flag_reg <= '1';
-              we_vram_out <= '0'; -- write enable
-              write_flag_reg <= '0';
-
-              -- force writing
-              WDBF_vreg <= std_logic_vector(unsigned(WDBF_vreg)+1);
-              vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+              if(write_flag_reg = '1')then
+                nedge_write_flag_reg <= '1';
+                we_vram_out <= '0'; -- write enable
+                write_flag_reg <= '0';
+              end if;
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>
@@ -240,6 +239,16 @@ begin
 
               --write 2
               nedge_write_flag_reg <= '0';
+
+              if(nedge_write_flag_reg = '1')then
+                case cursor_config is
+                  when "00" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                  when "01" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
+                  when "10" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-1);
+                  when "11" => vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-128);
+                  when others =>
+                end case;
+              end if;
 
               we_vram_out <= '1'; -- write disable == write trig
             when "11" =>
