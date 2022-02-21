@@ -106,12 +106,12 @@ begin
   state <= haddr_vec(1 downto 0);
 
   vram_scan_addr(16 downto 15) <= read_frame_reg(1 downto 0);
-  vram_scan_addr(14 downto 7) <= vaddr_vec(7 downto 0);
+  vram_scan_addr(14 downto 7) <= vaddr_vec(9 downto 2);
   vram_scan_addr(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr(0) <= haddr_vec(0);
 
   UPDOWN_sig <= CFG_vreg(0);
-  UPDOWN_sig <= CFG_vreg(1);
+  RCSEC_sig <= CFG_vreg(1);
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -147,6 +147,7 @@ begin
     -- positive edge
     if(clk_in'event and clk_in = '1')then
       if(reset_in = '0')then
+        CFG_vreg <= "00000000";
         WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
         cmd_flag_reg1 <= '0';
@@ -225,25 +226,13 @@ begin
               -- write 1
               addr_vram_out <= vram_writecursor_reg;
 
-              if(write_flag_reg = '1')then
-                nedge_write_flag_reg <= '1';
-                we_vram_out <= '0'; -- write enable
-                write_flag_reg <= '0';
+              nedge_write_flag_reg <= '1';
+              we_vram_out <= '0'; -- write enable
+              write_flag_reg <= '0';
 
-                if(UPDOWN_sig = '0')then
-                  if(RCSEC_sig = '0')then
-                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-                  else
-                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+"0000000000001000");
-                  end if;
-                else
-                  if(RCSEC_sig = '0')then
-                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-1);
-                  else
-                    vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)-"0000000000001000");
-                  end if;
-                end if;
-              end if;
+              -- force writing
+              WDBF_vreg <= std_logic_vector(unsigned(WDBF_vreg)+1);
+              vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
 
               oe_vram_out <= '1'; -- out disable
             when "10" =>

@@ -65,31 +65,33 @@ begin
 
   process
   begin
-    T_VRAMDATA <= "00010010";
-    T_STRB <= '1';
-    T_CS <= '1';
-    T_DATA <= "10000000";
-    T_ADDR <= "000";
+    wait for 100 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "10101010"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+    wait for 100 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "10101011"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+    wait for 100 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "10101100"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+  end process;
+
+  process
+  begin
+    T_VRAMDATA <= "ZZZZZZZZ";
+    --T_STRB <= '1';
+    T_CS <= '0';
+    --T_DATA <= "10000000";
+    T_ADDR <= "100";
     wait for 10 ns;
     T_RESET <= '0'; wait for 200 ns;
     T_RESET <= '1'; wait for 25 ms;
 
-    -- not cs
-    T_STRB <= '0'; wait for 500 ns;
-    T_DATA <= "00000001"; wait for 250 ns;
-    T_STRB <= '1'; wait for 500 ns;
-
-    wait for 25 ms;
-
-    T_CS <= '0';
-    -- cs
-    T_STRB <= '0'; wait for 500 ns;
-    T_DATA <= "00000010"; wait for 251 ns;
-    T_STRB <= '1'; wait for 500 ns;
-    T_VRAMDATA <= "ZZZZZZZZ"; wait for 800 ns;
-    T_VRAMDATA <= "10100101";
-
-    wait for 25 ms;
 
     assert false
     report "Simulation Complete!"
