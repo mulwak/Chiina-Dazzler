@@ -4,8 +4,7 @@
 -- includes
 library ieee;
 use ieee.std_logic_1164.all;
-use ieee.std_logic_unsigned.all;
-use ieee.std_logic_arith.all;
+use ieee.numeric_std.all;
 
 -- entity declaration
 entity VideoTimingGen is
@@ -22,7 +21,6 @@ architecture RTL of VideoTimingGen is
   -- constants
   -- clock length
   -- H
-  constant H_DEL  : integer := 2;
   constant H_VALID : integer := 256;
   constant H_FRONT : integer := 7;
   constant H_SYNC : integer := 35;
@@ -39,6 +37,8 @@ architecture RTL of VideoTimingGen is
   signal h_blank_delayreg1, v_blank_delayreg1 : std_logic;
   signal h_eblank_reg, v_eblank_reg : std_logic;
 begin
+  h_addr_out <= h_cnt_reg;
+  v_addr_out <= v_cnt_reg;
   h_blank_out <= h_blank_delayreg1;
   v_blank_out <= v_blank_delayreg1;
   h_earlyblank_out <= h_eblank_reg;
@@ -60,16 +60,13 @@ begin
         if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
           h_eblank_reg <= '1';
           h_cnt_reg <= 0;
-          h_addr_out <= 0; -- wasureteta
           -- end of v back
           if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
             v_eblank_reg <= '1';
             v_cnt_reg <= 0;
-          v_addr_out <= 0; -- wasureteta
           else
             -- v count (in end of h back)
             v_cnt_reg <= v_cnt_reg+1;
-            v_addr_out <= v_cnt_reg+1;
             case v_cnt_reg is
               -- end of v valid
               when V_VALID-1 =>
@@ -91,7 +88,6 @@ begin
         else -- not end of h back
              -- count
           h_cnt_reg <= h_cnt_reg+1;
-          h_addr_out <= h_cnt_reg+1;
           -- about h count
           case h_cnt_reg is
             -- end of h valid
