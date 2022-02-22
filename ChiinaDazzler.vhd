@@ -84,6 +84,8 @@ architecture RTL of ChiinaDazzler is
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
 
+  signal  we_vram_reg : std_logic;
+
   --regs (visible
   signal  WDBF_vreg : std_logic_vector(7 downto 0);
 
@@ -135,8 +137,10 @@ begin
       else
         if(nedge_write_flag_reg = '1')then
           data_vram_io <= WDBF_vreg;
+          we_vram_reg <= '0';
         else
           data_vram_io <= "ZZZZZZZZ";
+          we_vram_reg <= '1';
         end if;
       end if;
     end if;
@@ -218,7 +222,7 @@ begin
 
               if(write_flag_reg = '1')then
                 nedge_write_flag_reg <= '1';
-                we_vram_out <= '0'; -- write enable
+                --we_vram_out <= '0'; -- write enable
                 write_flag_reg <= '0';
               end if;
 
@@ -231,7 +235,7 @@ begin
                 vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
               end if;
 
-              we_vram_out <= '1'; -- write disable == write trig
+              --we_vram_out <= '1'; -- write disable == write trig
             when "11" | "00" =>
               addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr)+1);
               oe_vram_out <= '0'; -- out enable
@@ -270,6 +274,8 @@ begin
   with hvblank select
     rgb_out <= color_pallet_regfile(cp_outaddr_reg)(2 downto 0) when "11",
                "000" when others;
+
+  we_vram_out <= we_vram_reg or clk_in;
 
 end RTL;
 
