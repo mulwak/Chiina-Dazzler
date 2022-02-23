@@ -80,9 +80,13 @@ architecture RTL of ChiinaDazzler is
   signal  vram_writecursor_reg : std_logic_vector(16 downto 0);
   signal  read_frame_reg  : std_logic_vector(1 downto 0);
 
-  type regfile_type is array (15 downto 0) of std_logic_vector(11 downto 0);
+  type regfile_type is array (0 to 15) of std_logic_vector(11 downto 0);
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
+
+  type  cp_byte_type  is array (0 to 23) of std_logic_vector(7 downto 0); -- byte access for loading
+  signal  cp_byte_sig  : cp_byte_type;
+  signal  cp_loadaddr_reg : integer range 0 to 23;
 
   signal  we_vram_reg : std_logic;
 
@@ -111,6 +115,39 @@ begin
   vram_scan_addr(14 downto 7) <= vaddr_vec(9 downto 2);
   vram_scan_addr(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr(0) <= haddr_vec(0);
+
+  color_pallet_regfile(0) <= cp_byte_sig(0) &
+                             cp_byte_sig(1)(7 downto 4);
+  color_pallet_regfile(1) <= cp_byte_sig(1)(3 downto 0) &
+                             cp_byte_sig(2);
+  color_pallet_regfile(2) <= cp_byte_sig(3) &
+                             cp_byte_sig(4)(7 downto 4);
+  color_pallet_regfile(3) <= cp_byte_sig(4)(3 downto 0) &
+                             cp_byte_sig(5);
+  color_pallet_regfile(4) <= cp_byte_sig(6) &
+                             cp_byte_sig(7)(7 downto 4);
+  color_pallet_regfile(5) <= cp_byte_sig(7)(3 downto 0) &
+                             cp_byte_sig(8);
+  color_pallet_regfile(6) <= cp_byte_sig(9) &
+                             cp_byte_sig(10)(7 downto 4);
+  color_pallet_regfile(7) <= cp_byte_sig(10)(3 downto 0) &
+                             cp_byte_sig(11);
+  color_pallet_regfile(8) <= cp_byte_sig(12) &
+                             cp_byte_sig(13)(7 downto 4);
+  color_pallet_regfile(9) <= cp_byte_sig(13)(3 downto 0) &
+                             cp_byte_sig(14);
+  color_pallet_regfile(10) <= cp_byte_sig(15) &
+                             cp_byte_sig(16)(7 downto 4);
+  color_pallet_regfile(11) <= cp_byte_sig(16)(3 downto 0) &
+                             cp_byte_sig(17);
+  color_pallet_regfile(12) <= cp_byte_sig(18) &
+                             cp_byte_sig(19)(7 downto 4);
+  color_pallet_regfile(13) <= cp_byte_sig(19)(3 downto 0) &
+                             cp_byte_sig(20);
+  color_pallet_regfile(14) <= cp_byte_sig(21) &
+                             cp_byte_sig(22)(7 downto 4);
+  color_pallet_regfile(15) <= cp_byte_sig(22)(3 downto 0) &
+                             cp_byte_sig(23);
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -262,6 +299,10 @@ begin
           when others =>
         -- ???
         end case;
+
+        if(heblank = '0' and hblank = '1')then
+          cp_loadaddr_reg <= 0;
+        end if;
 
       end if;
     end if;
