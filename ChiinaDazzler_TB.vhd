@@ -62,9 +62,25 @@ begin
     T_CLK <= '1'; wait for 31.25 ns;
   end process;
 
+  process(T_CLK)
+  begin
+    if(T_CLK'event and T_CLK = '1')then
+      case T_VRAMDATA is
+        when "LLLL"&"LLLH" =>
+          T_VRAMDATA <= "LLHL"&"LLHH";
+        when "LLHL"&"LLHH" =>
+          T_VRAMDATA <= "LHLL"&"LHLH";
+        when "LHLL"&"LHLH" =>
+          T_VRAMDATA <= "LHHL"&"LHHH";
+        when others =>
+          T_VRAMDATA <= "LLLL"&"LLLH";
+      end case;
+    end if;
+  end process;
+
+
   process
   begin
-    T_VRAMDATA <= "HLHLHLHL";
     T_CS <= '0';
     T_ADDR <= "000";
     wait for 10 ns;
