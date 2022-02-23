@@ -95,11 +95,11 @@ begin
               h_eblank_reg <= '0';
 
             -- end of h front
-            when H_VALID+H_FRONT-1 =>
+            when H_VALID+H_FRONT =>
               h_sync_out <= '0';
 
             -- end of h sync
-            when H_VALID+H_FRONT+H_SYNC-1 =>
+            when H_VALID+H_FRONT+H_SYNC =>
               h_sync_out <= '1';
 
             when others =>
