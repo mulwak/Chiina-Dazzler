@@ -55,7 +55,8 @@ architecture RTL of ChiinaDazzler is
   signal vaddr_vec  : std_logic_vector(9 downto 0);
   signal hvblank : std_logic_vector(1 downto 0);
 
-  signal  vram_scan_addr  : std_logic_vector(16 downto 0);
+  signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
+  signal  vram_cpload_addr_sig  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
 
   --config signals
@@ -79,6 +80,7 @@ architecture RTL of ChiinaDazzler is
   signal  lut_que_reg2 : std_logic_vector(3 downto 0);
   signal  vram_writecursor_reg : std_logic_vector(16 downto 0);
   signal  read_frame_reg  : std_logic_vector(1 downto 0);
+  signal  write_frame_reg  : std_logic_vector(1 downto 0);
 
   type regfile_type is array (0 to 15) of std_logic_vector(11 downto 0);
   signal color_pallet_regfile  : regfile_type;
@@ -111,43 +113,21 @@ begin
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
   state <= haddr_vec(1 downto 0);
 
-  vram_scan_addr(16 downto 15) <= read_frame_reg(1 downto 0);
-  vram_scan_addr(14 downto 7) <= vaddr_vec(9 downto 2);
-  vram_scan_addr(6 downto 1) <= haddr_vec(7 downto 2);
-  vram_scan_addr(0) <= haddr_vec(0);
+  vram_scan_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
+  vram_scan_addr_sig(14 downto 7) <= vaddr_vec(9 downto 2);
+  vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
+  vram_scan_addr_sig(0) <= haddr_vec(0);
 
-  color_pallet_regfile(0) <= cp_byte_sig(0) &
-                             cp_byte_sig(1)(7 downto 4);
-  color_pallet_regfile(1) <= cp_byte_sig(1)(3 downto 0) &
-                             cp_byte_sig(2);
-  color_pallet_regfile(2) <= cp_byte_sig(3) &
-                             cp_byte_sig(4)(7 downto 4);
-  color_pallet_regfile(3) <= cp_byte_sig(4)(3 downto 0) &
-                             cp_byte_sig(5);
-  color_pallet_regfile(4) <= cp_byte_sig(6) &
-                             cp_byte_sig(7)(7 downto 4);
-  color_pallet_regfile(5) <= cp_byte_sig(7)(3 downto 0) &
-                             cp_byte_sig(8);
-  color_pallet_regfile(6) <= cp_byte_sig(9) &
-                             cp_byte_sig(10)(7 downto 4);
-  color_pallet_regfile(7) <= cp_byte_sig(10)(3 downto 0) &
-                             cp_byte_sig(11);
-  color_pallet_regfile(8) <= cp_byte_sig(12) &
-                             cp_byte_sig(13)(7 downto 4);
-  color_pallet_regfile(9) <= cp_byte_sig(13)(3 downto 0) &
-                             cp_byte_sig(14);
-  color_pallet_regfile(10) <= cp_byte_sig(15) &
-                             cp_byte_sig(16)(7 downto 4);
-  color_pallet_regfile(11) <= cp_byte_sig(16)(3 downto 0) &
-                             cp_byte_sig(17);
-  color_pallet_regfile(12) <= cp_byte_sig(18) &
-                             cp_byte_sig(19)(7 downto 4);
-  color_pallet_regfile(13) <= cp_byte_sig(19)(3 downto 0) &
-                             cp_byte_sig(20);
-  color_pallet_regfile(14) <= cp_byte_sig(21) &
-                             cp_byte_sig(22)(7 downto 4);
-  color_pallet_regfile(15) <= cp_byte_sig(22)(3 downto 0) &
-                             cp_byte_sig(23);
+  a:for i in 0 to 7 generate
+    color_pallet_regfile(i*2) <= cp_byte_sig(i*3) &
+                                 cp_byte_sig((i*3)+1)(7 downto 4);
+    color_pallet_regfile((i*2)+1) <= cp_byte_sig((i*3)+1)(3 downto 0) &
+                                     cp_byte_sig((i*3)+2);
+  end generate a;
+
+  vram_cpload_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
+  vram_cpload_addr_sig(14 downto 5) <= "1100000000";
+  vram_cpload_addr_sig(4 downto 0) <= std_logic_vector(to_unsigned(cp_loadaddr_reg, 5));
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -197,22 +177,22 @@ begin
         --vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
-        color_pallet_regfile(0) <= "000000000000";
-        color_pallet_regfile(1) <= "000000000001";
-        color_pallet_regfile(2) <= "000000000010";
-        color_pallet_regfile(3) <= "000000000011";
-        color_pallet_regfile(4) <= "000000000100";
-        color_pallet_regfile(5) <= "000000000101";
-        color_pallet_regfile(6) <= "000000000110";
-        color_pallet_regfile(7) <= "000000000111";
-        color_pallet_regfile(8) <= "111111111111";
-        color_pallet_regfile(9) <= "111111111111";
-        color_pallet_regfile(10) <= "111111111111";
-        color_pallet_regfile(11) <= "111111111111";
-        color_pallet_regfile(12) <= "111111111111";
-        color_pallet_regfile(13) <= "111111111111";
-        color_pallet_regfile(14) <= "111111111111";
-        color_pallet_regfile(15) <= "111111111111";
+        --color_pallet_regfile(0) <= "000000000000";
+        --color_pallet_regfile(1) <= "000000000001";
+        --color_pallet_regfile(2) <= "000000000010";
+        --color_pallet_regfile(3) <= "000000000011";
+        --color_pallet_regfile(4) <= "000000000100";
+        --color_pallet_regfile(5) <= "000000000101";
+        --color_pallet_regfile(6) <= "000000000110";
+        --color_pallet_regfile(7) <= "000000000111";
+        --color_pallet_regfile(8) <= "111111111111";
+        --color_pallet_regfile(9) <= "111111111111";
+        --color_pallet_regfile(10) <= "111111111111";
+        --color_pallet_regfile(11) <= "111111111111";
+        --color_pallet_regfile(12) <= "111111111111";
+        --color_pallet_regfile(13) <= "111111111111";
+        --color_pallet_regfile(14) <= "111111111111";
+        --color_pallet_regfile(15) <= "111111111111";
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
@@ -274,7 +254,7 @@ begin
 
               --we_vram_out <= '1'; -- write disable == write trig
             when "00" | "01" =>
-              addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr));
+              addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
               oe_vram_out <= '0'; -- out enable
             when others =>
               -- ???
@@ -302,6 +282,14 @@ begin
 
         if(heblank = '0' and hblank = '1')then
           cp_loadaddr_reg <= 0;
+        end if;
+
+        if(heblank = '0' and hblank = '0')then
+          cp_byte_sig(cp_loadaddr_reg) <= data_vram_io;
+          addr_vram_out <= vram_cpload_addr_sig;
+          if(cp_loadaddr_reg /= 23)then
+            cp_loadaddr_reg <= cp_loadaddr_reg+1;
+          end if;
         end if;
 
       end if;
