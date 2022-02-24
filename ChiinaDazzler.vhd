@@ -216,7 +216,7 @@ begin
         -- true (sync addr nums) screen area
         if(heblank = '1' and veblank = '1')then
           case state is
-            when "01" =>
+            when "10" =>
               -- write 1
               addr_vram_out <= vram_writecursor_reg;
 
@@ -227,7 +227,7 @@ begin
               end if;
 
               oe_vram_out <= '1'; -- out disable
-            when "10" =>
+            when "11" =>
               --write 2
               nedge_write_flag_reg <= '0';
 
@@ -236,7 +236,7 @@ begin
               end if;
 
               --we_vram_out <= '1'; -- write disable == write trig
-            when "11" | "00" =>
+            when "00" | "01" =>
               addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr)+1);
               oe_vram_out <= '0'; -- out enable
             when others =>
@@ -245,18 +245,18 @@ begin
         end if;
 
         case state is
-          when "00" =>
+          when "01" =>
             lut_que_reg0 <= data_vram_io(3 downto 0);
             -- load 2
             cp_outaddr_reg <= to_integer(unsigned(data_vram_io(7 downto 4)));
-          when "01" =>
+          when "10" =>
             lut_que_reg1 <= data_vram_io(7 downto 4);
             lut_que_reg2 <= data_vram_io(3 downto 0);
 
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
-          when "10" =>
-            cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
           when "11" =>
+            cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
+          when "00" =>
             -- load 1
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
           when others =>
