@@ -237,7 +237,7 @@ begin
 
               --we_vram_out <= '1'; -- write disable == write trig
             when "00" | "01" =>
-              addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr)+1);
+              addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr));
               oe_vram_out <= '0'; -- out enable
             when others =>
               -- ???

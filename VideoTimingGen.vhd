@@ -35,7 +35,6 @@ architecture RTL of VideoTimingGen is
   signal v_cnt_reg  : integer range 0 to (V_VALID+V_FRONT+V_SYNC+V_BACK-1); -- 0~806 10bit counter
   signal h_blank_delayreg0, v_blank_delayreg0 : std_logic;
   signal h_blank_delayreg1, v_blank_delayreg1 : std_logic;
-  signal h_blank_delayreg2, v_blank_delayreg2 : std_logic;
   signal h_eblank_reg, v_eblank_reg : std_logic;
 begin
   h_addr_out <= h_cnt_reg;
@@ -52,9 +51,9 @@ begin
       if(reset_in = '0')then
         h_cnt_reg <= 0;
         v_cnt_reg <= 0;
-        h_eblank_reg <= '1';
+        --h_eblank_reg <= '1';
         v_eblank_reg <= '1';
-        h_sync_out <= '1';
+        --h_sync_out <= '1';
         v_sync_out <= '1';
       else
         -- end of h back
@@ -108,11 +107,9 @@ begin
           end case; --- end case about h
         end if; -- end if(end of h)
       end if; -- end reset
-    h_blank_delayreg2 <= h_eblank_reg;
-    h_blank_delayreg1 <= h_blank_delayreg2;
+    h_blank_delayreg1 <= h_eblank_reg;
     h_blank_delayreg0 <= h_blank_delayreg1;
-    v_blank_delayreg2 <= v_eblank_reg;
-    v_blank_delayreg1 <= v_blank_delayreg2;
+    v_blank_delayreg1 <= v_eblank_reg;
     v_blank_delayreg0 <= v_blank_delayreg1;
     end if; -- end clk positive edge
   end process;
