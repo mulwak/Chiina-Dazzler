@@ -56,18 +56,28 @@ begin
         --h_sync_out <= '1';
         v_sync_out <= '1';
       else
-        -- end of h back
-        if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
-          h_eblank_reg <= '1';
-          h_cnt_reg <= 0;
-          -- end of v back
-          if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
-            v_eblank_reg <= '1';
-            v_cnt_reg <= 0;
-          else
-            -- v count (in end of h back)
-            v_cnt_reg <= v_cnt_reg+1;
+        -- count
+        case h_cnt_reg is
+          when H_VALID+H_FRONT+H_SYNC+H_BACK-1 =>
+            h_cnt_reg <= 0;
+          when others =>
+            h_cnt_reg <= h_cnt_reg+1;
+        end case;
+
+        case h_cnt_reg is
+          when H_VALID+H_FRONT+H_SYNC+H_BACK-1 =>
+            h_eblank_reg <= '1';
+
             case v_cnt_reg is
+              when V_VALID+V_FRONT+V_SYNC+V_BACK-1 =>
+                v_cnt_reg <= 0;
+              when others =>
+                v_cnt_reg <= v_cnt_reg+1;
+            end case;
+
+            case v_cnt_reg is
+              when V_VALID+V_FRONT+V_SYNC+V_BACK-1 =>
+                v_eblank_reg <= '1';
               -- end of v valid
               when V_VALID-1 =>
                 v_eblank_reg <= '0';
@@ -83,16 +93,10 @@ begin
               when others =>
             -- ??
             end case; -- end case about v
-          end if; -- end if(end of v)
-                  -- h valid
-        else -- not end of h back
-             -- count
-          h_cnt_reg <= h_cnt_reg+1;
-          -- about h count
-          case h_cnt_reg is
+
             -- end of h valid
-            when H_VALID-1 =>
-              h_eblank_reg <= '0';
+          when H_VALID-1 =>
+            h_eblank_reg <= '0';
 
             -- end of h front
             when H_VALID+H_FRONT =>
@@ -102,10 +106,8 @@ begin
             when H_VALID+H_FRONT+H_SYNC =>
               h_sync_out <= '1';
 
-            when others =>
-          -- ??
-          end case; --- end case about h
-        end if; -- end if(end of h)
+          when others =>
+        end case;
       end if; -- end reset
     h_blank_delayreg1 <= h_eblank_reg;
     h_blank_delayreg0 <= h_blank_delayreg1;
