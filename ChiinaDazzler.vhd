@@ -41,7 +41,8 @@ architecture RTL of ChiinaDazzler is
           h_sync_out : out std_logic;
           v_sync_out : out std_logic;
           h_addr_out  : out integer range 0 to 511;
-          v_addr_out  : out integer range 0 to 1023
+          v_addr_out  : out integer range 0 to 1023;
+          cpload_out :  out std_logic
         );
   end component;
 
@@ -49,6 +50,7 @@ architecture RTL of ChiinaDazzler is
   signal  heblank, hblank, veblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
   signal  vaddr  : integer range 0 to 1023;
+  signal  cpload_sig : std_logic;
 
   --tmp signals
   signal haddr_vec  : std_logic_vector(8 downto 0);
@@ -86,9 +88,10 @@ architecture RTL of ChiinaDazzler is
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
 
-  type  cp_byte_type  is array (0 to 23) of std_logic_vector(7 downto 0); -- byte access for loading
+  type  cp_byte_type  is array (0 to 31) of std_logic_vector(7 downto 0); -- byte access for loading
   signal  cp_byte_sig  : cp_byte_type;
-  signal  cp_loadaddr_reg : integer range 0 to 23;
+  --signal  cp_loadaddr_sig : integer range 3 to 26;
+  signal  cp_loadaddr_sig : std_logic_vector(4 downto 0);
 
   signal  we_vram_reg : std_logic;
 
@@ -106,8 +109,8 @@ begin
            h_sync_out => hsync,
            v_sync_out => vsync,
            h_addr_out => haddr,
-           v_addr_out => vaddr
-         );
+           v_addr_out => vaddr,
+           cpload_out => cpload_sig);
 
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
@@ -119,15 +122,17 @@ begin
   vram_scan_addr_sig(0) <= haddr_vec(0);
 
   a:for i in 0 to 7 generate
-    color_pallet_regfile(i*2) <= cp_byte_sig(i*3) &
-                                 cp_byte_sig((i*3)+1)(7 downto 4);
-    color_pallet_regfile((i*2)+1) <= cp_byte_sig((i*3)+1)(3 downto 0) &
-                                     cp_byte_sig((i*3)+2);
+    color_pallet_regfile(i*2) <= cp_byte_sig((i*3)+3) &
+                                 cp_byte_sig((i*3)+1+3)(7 downto 4);
+    color_pallet_regfile((i*2)+1) <= cp_byte_sig((i*3)+1+3)(3 downto 0) &
+                                     cp_byte_sig((i*3)+2+3);
   end generate a;
+
+  cp_loadaddr_sig <= haddr_vec(4 downto 0);
 
   vram_cpload_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
   vram_cpload_addr_sig(14 downto 5) <= "1100000000";
-  vram_cpload_addr_sig(4 downto 0) <= std_logic_vector(to_unsigned(cp_loadaddr_reg, 5));
+  vram_cpload_addr_sig(4 downto 0) <= cp_loadaddr_sig;
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -280,16 +285,13 @@ begin
         -- ???
         end case;
 
-        if(heblank = '0' and hblank = '1')then
-          cp_loadaddr_reg <= 0;
-        end if;
+        --if(heblank = '0' and hblank = '1')then
+        --  cp_loadaddr_sig <= 0;
+        --end if;
 
-        if(heblank = '0' and hblank = '0')then
-          cp_byte_sig(cp_loadaddr_reg) <= data_vram_io;
+        if(cpload_sig = '1')then
+          cp_byte_sig(to_integer(unsigned(cp_loadaddr_sig))) <= data_vram_io;
           addr_vram_out <= vram_cpload_addr_sig;
-          if(cp_loadaddr_reg /= 23)then
-            cp_loadaddr_reg <= cp_loadaddr_reg+1;
-          end if;
         end if;
 
       end if;

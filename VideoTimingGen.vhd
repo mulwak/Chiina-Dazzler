@@ -13,7 +13,8 @@ entity VideoTimingGen is
   h_blank_out, v_blank_out, h_sync_out, v_sync_out  : out std_logic; -- negative logic
   h_earlyblank_out, v_earlyblank_out  : out std_logic;
   h_addr_out  : out integer range 0 to 511;
-  v_addr_out  : out integer range 0 to 1023
+  v_addr_out  : out integer range 0 to 1023;
+  cpload_out :  out std_logic
 );
 end VideoTimingGen;
 
@@ -30,6 +31,8 @@ architecture RTL of VideoTimingGen is
   constant V_FRONT : integer := 3;
   constant V_SYNC : integer := 6;
   constant V_BACK : integer := 28;
+
+  constant CPLOAD_END : integer := H_VALID+24;
 
   signal h_cnt_reg  : integer range 0 to (H_VALID+H_FRONT+H_SYNC+H_BACK-1); -- 0~331 9bit counter
   signal v_cnt_reg  : integer range 0 to (V_VALID+V_FRONT+V_SYNC+V_BACK-1); -- 0~806 10bit counter
@@ -94,17 +97,21 @@ begin
             -- ??
             end case; -- end case about v
 
-            -- end of h valid
+          -- end of h valid
           when H_VALID-1 =>
             h_eblank_reg <= '0';
+            cpload_out <= '1';
 
             -- end of h front
-            when H_VALID+H_FRONT =>
-              h_sync_out <= '0';
+          when H_VALID+H_FRONT =>
+            h_sync_out <= '0';
 
             -- end of h sync
-            when H_VALID+H_FRONT+H_SYNC =>
-              h_sync_out <= '1';
+          when H_VALID+H_FRONT+H_SYNC =>
+            h_sync_out <= '1';
+
+          when CPLOAD_END =>
+            cpload_out <= '0';
 
           when others =>
         end case;
