@@ -214,8 +214,8 @@ begin
                   vram_writecursor_reg <= "00000000000000000";
                 when "00000010" =>
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-                when "00000011" =>
-                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
+                --when "00000011" =>
+                  --vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
                 when others =>
               end case;
             -- CFG
@@ -245,10 +245,10 @@ begin
               --write 2
               nedge_write_flag_reg <= '0';
 
-              if(nedge_write_flag_reg = '1')then
-                vram_writecursor_reg <=
-                 std_logic_vector(unsigned(vram_writecursor_reg)+1);
-               end if;
+              --if(nedge_write_flag_reg = '1')then
+                --vram_writecursor_reg <=
+                 --std_logic_vector(unsigned(vram_writecursor_reg)+1);
+               --end if;
 
               --we_vram_out <= '1'; -- write disable == write trig
             when "00" | "01" =>
