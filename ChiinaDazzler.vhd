@@ -37,7 +37,6 @@ architecture RTL of ChiinaDazzler is
           reset_in : in std_logic;
           h_blank_out : out std_logic;
           v_blank_out : out std_logic;
-          h_earlyblank_out, v_earlyblank_out  : out std_logic;
           h_sync_out : out std_logic;
           v_sync_out : out std_logic;
           h_addr_out  : out integer range 0 to 511;
@@ -47,7 +46,7 @@ architecture RTL of ChiinaDazzler is
   end component;
 
   --crtc signals
-  signal  heblank, hblank, veblank, vblank, hsync, vsync  :  std_logic;
+  signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
   signal  vaddr  : integer range 0 to 1023;
   signal  cpload_sig : std_logic;
@@ -104,8 +103,6 @@ begin
            reset_in => reset_in,
            h_blank_out => hblank,
            v_blank_out => vblank,
-           h_earlyblank_out => heblank,
-           v_earlyblank_out => veblank,
            h_sync_out => hsync,
            v_sync_out => vsync,
            h_addr_out => haddr,
@@ -117,7 +114,9 @@ begin
   state <= haddr_vec(1 downto 0);
 
   vram_scan_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
-  vram_scan_addr_sig(14 downto 7) <= vaddr_vec(9 downto 2);
+  vram_scan_addr_sig(14 downto 7) <=
+    vaddr_vec(9 downto 2) when cpload_sig = '0' else
+    "11000000";
   vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr_sig(0) <= haddr_vec(0);
 
@@ -129,10 +128,6 @@ begin
   end generate a;
 
   cp_loadaddr_sig <= haddr_vec(4 downto 0);
-
-  vram_cpload_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
-  vram_cpload_addr_sig(14 downto 5) <= "1100000000";
-  vram_cpload_addr_sig(4 downto 0) <= cp_loadaddr_sig;
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -234,9 +229,6 @@ begin
           end case;
         end if;
 
-
-        -- true (sync addr nums) screen area
-        if(heblank = '1' and veblank = '1')then
           case state is
             when "10" =>
               -- write 1
@@ -254,8 +246,9 @@ begin
               nedge_write_flag_reg <= '0';
 
               if(nedge_write_flag_reg = '1')then
-                vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-              end if;
+                vram_writecursor_reg <=
+                 std_logic_vector(unsigned(vram_writecursor_reg)+1);
+               end if;
 
               --we_vram_out <= '1'; -- write disable == write trig
             when "00" | "01" =>
@@ -264,7 +257,6 @@ begin
             when others =>
               -- ???
           end case;
-        end if;
 
         case state is
           when "01" =>
@@ -285,13 +277,8 @@ begin
         -- ???
         end case;
 
-        --if(heblank = '0' and hblank = '1')then
-        --  cp_loadaddr_sig <= 0;
-        --end if;
-
         if(cpload_sig = '1')then
           cp_byte_sig(to_integer(unsigned(cp_loadaddr_sig))) <= data_vram_io;
-          addr_vram_out <= vram_cpload_addr_sig;
         end if;
 
       end if;
