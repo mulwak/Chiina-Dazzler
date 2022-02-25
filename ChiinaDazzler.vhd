@@ -213,7 +213,7 @@ begin
                 when "00000000" =>
                   vram_writecursor_reg <= "00000000000000000";
                 when "00000010" =>
-                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                  --vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
                 --when "00000011" =>
                   --vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
                 when others =>

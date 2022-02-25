@@ -47,8 +47,8 @@ begin
         h_cnt_reg <= 0;
         v_cnt_reg <= 0;
         --h_sync_out <= '1';
-        v_sync_out <= '1';
-        v_blank_out <= '1';
+        --v_sync_out <= '1';
+        --v_blank_out <= '1';
       else
         -- count
         case h_cnt_reg is
@@ -59,7 +59,8 @@ begin
         end case;
 
         case h_cnt_reg is
-          when H_VALID+H_FRONT+H_SYNC+H_BACK-1 =>
+          when 1 =>
+          --when H_VALID+H_FRONT+H_SYNC+H_BACK-1 =>
 
             case v_cnt_reg is
               when V_VALID+V_FRONT+V_SYNC+V_BACK-1 =>
@@ -88,7 +89,6 @@ begin
             end case; -- end case about v
 
           -- end of h valid
-          when 1 =>
             h_blank_out <= '1';
 
           when 257 =>
