@@ -177,22 +177,6 @@ begin
         --vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
-        --color_pallet_regfile(0) <= "000000000000";
-        --color_pallet_regfile(1) <= "000000000001";
-        --color_pallet_regfile(2) <= "000000000010";
-        --color_pallet_regfile(3) <= "000000000011";
-        --color_pallet_regfile(4) <= "000000000100";
-        --color_pallet_regfile(5) <= "000000000101";
-        --color_pallet_regfile(6) <= "000000000110";
-        --color_pallet_regfile(7) <= "000000000111";
-        --color_pallet_regfile(8) <= "111111111111";
-        --color_pallet_regfile(9) <= "111111111111";
-        --color_pallet_regfile(10) <= "111111111111";
-        --color_pallet_regfile(11) <= "111111111111";
-        --color_pallet_regfile(12) <= "111111111111";
-        --color_pallet_regfile(13) <= "111111111111";
-        --color_pallet_regfile(14) <= "111111111111";
-        --color_pallet_regfile(15) <= "111111111111";
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
@@ -213,7 +197,7 @@ begin
                 when "00000000" =>
                   vram_writecursor_reg <= "00000000000000000";
                 when "00000010" =>
-                  --vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
                 --when "00000011" =>
                   --vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+128);
                 when others =>
@@ -230,27 +214,6 @@ begin
         end if;
 
           case state is
-            when "10" =>
-              -- write 1
-              addr_vram_out <= vram_writecursor_reg;
-
-              if(write_flag_reg = '1')then
-                nedge_write_flag_reg <= '1';
-                --we_vram_out <= '0'; -- write enable
-                write_flag_reg <= '0';
-              end if;
-
-              oe_vram_out <= '1'; -- out disable
-            when "11" =>
-              --write 2
-              nedge_write_flag_reg <= '0';
-
-              --if(nedge_write_flag_reg = '1')then
-                --vram_writecursor_reg <=
-                 --std_logic_vector(unsigned(vram_writecursor_reg)+1);
-               --end if;
-
-              --we_vram_out <= '1'; -- write disable == write trig
             when "00" | "01" =>
               addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
               oe_vram_out <= '0'; -- out enable
@@ -268,8 +231,27 @@ begin
             lut_que_reg2 <= data_vram_io(3 downto 0);
 
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
+              -- write 1
+              addr_vram_out <= vram_writecursor_reg;
+
+              if(write_flag_reg = '1')then
+                nedge_write_flag_reg <= '1';
+                --we_vram_out <= '0'; -- write enable
+                write_flag_reg <= '0';
+              end if;
+
+              oe_vram_out <= '1'; -- out disable
           when "11" =>
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
+              --write 2
+              nedge_write_flag_reg <= '0';
+
+              --if(nedge_write_flag_reg = '1')then
+                --vram_writecursor_reg <=
+                 --std_logic_vector(unsigned(vram_writecursor_reg)+1);
+               --end if;
+
+              --we_vram_out <= '1'; -- write disable == write trig
           when "00" =>
             -- load 1
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
