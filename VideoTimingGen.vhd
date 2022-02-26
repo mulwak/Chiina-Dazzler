@@ -61,7 +61,7 @@ begin
                 '1';
   v_sync_out <= '0' when
                 V_VALID+V_FRONT-1 < v_cnt_reg and
-                v_cnt_reg < V_VALID+V_FRONT+V_SYNC-2 else
+                v_cnt_reg < V_VALID+V_FRONT+V_SYNC else
                 '1';
   u1:process(clk_in)
   begin
