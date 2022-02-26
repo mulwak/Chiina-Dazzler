@@ -57,11 +57,11 @@ begin
                   '1';
   h_sync_out <= '0' when
                 H_VALID+H_FRONT < h_cnt_reg and
-                h_cnt_reg < H_VALID+H_FRONT+H_SYNC else
+                h_cnt_reg < H_VALID+H_FRONT+H_SYNC+1 else
                 '1';
   v_sync_out <= '0' when
                 V_VALID+V_FRONT-1 < v_cnt_reg and
-                v_cnt_reg < V_VALID+V_FRONT+V_SYNC-1 else
+                v_cnt_reg < V_VALID+V_FRONT+V_SYNC-2 else
                 '1';
   u1:process(clk_in)
   begin
