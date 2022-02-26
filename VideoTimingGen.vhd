@@ -50,8 +50,19 @@ begin
                 H_VALID-1 < h_cnt_reg and  h_cnt_reg < CPLOAD_END else
                 '0';
   h_eblank_reg <= '0' when
-                  h_cnt_reg > H_VALID-1 else
+                  H_VALID-1 < h_cnt_reg  else
                   '1';
+  v_eblank_reg <= '0' when
+                  V_VALID-1 < v_cnt_reg  else
+                  '1';
+  h_sync_out <= '0' when
+                H_VALID+H_FRONT < h_cnt_reg and
+                h_cnt_reg < H_VALID+H_FRONT+H_SYNC else
+                '1';
+  v_sync_out <= '0' when
+                V_VALID+V_FRONT-1 < v_cnt_reg and
+                v_cnt_reg < V_VALID+V_FRONT+V_SYNC-1 else
+                '1';
   u1:process(clk_in)
   begin
     -- clk positive edge
@@ -60,58 +71,18 @@ begin
       if(reset_in = '0')then
         h_cnt_reg <= 0;
         v_cnt_reg <= 0;
-        --h_eblank_reg <= '1';
-        --v_eblank_reg <= '1';
-        --h_sync_out <= '1';
-        --v_sync_out <= '1';
       else
         -- end of h back
         if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
           h_cnt_reg <= 0;
           -- end of v back
           if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
-            v_eblank_reg <= '1';
             v_cnt_reg <= 0;
           else
-            -- v count (in end of h back)
             v_cnt_reg <= v_cnt_reg+1;
-            case v_cnt_reg is
-              -- end of v valid
-              when V_VALID-1 =>
-                v_eblank_reg <= '0';
-
-              -- end of v front
-              when V_VALID+V_FRONT-1 =>
-                v_sync_out <= '0';
-
-              -- end of v sync
-              when V_VALID+V_FRONT+V_SYNC-1 =>
-                v_sync_out <= '1';
-
-              when others =>
-            -- ??
-            end case; -- end case about v
           end if; -- end if(end of v)
-                  -- h valid
         else -- not end of h back
-             -- count
           h_cnt_reg <= h_cnt_reg+1;
-          -- about h count
-          case h_cnt_reg is
-            -- end of h valid
-            when H_VALID-1 =>
-
-            -- end of h front
-            when H_VALID+H_FRONT =>
-              h_sync_out <= '0';
-
-            -- end of h sync
-            when H_VALID+H_FRONT+H_SYNC =>
-              h_sync_out <= '1';
-
-            when others =>
-          -- ??
-          end case; --- end case about h
         end if; -- end if(end of h)
       end if; -- end reset
     h_blank_delayreg1 <= h_eblank_reg;
