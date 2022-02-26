@@ -281,6 +281,13 @@ begin
           cp_byte_sig(to_integer(unsigned(cp_loadaddr_sig))) <= data_vram_io;
         end if;
 
+        case hvblank is
+          when "11" =>
+            rgb_out <= color_pallet_regfile(cp_outaddr_reg)(2 downto 0);
+          when others =>
+            rgb_out <= "000";
+        end case;
+
       end if;
     end if;
   end process;
@@ -289,9 +296,6 @@ begin
   vsync_out <= vsync;
 
   hvblank <= hblank & vblank;
-  with hvblank select
-    rgb_out <= color_pallet_regfile(cp_outaddr_reg)(2 downto 0) when "11",
-               "000" when others;
 
   we_vram_out <= we_vram_reg or clk_in;
 
