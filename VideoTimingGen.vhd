@@ -46,8 +46,12 @@ begin
   v_blank_out <= v_blank_delayreg0;
   h_earlyblank_out <= h_eblank_reg;
   v_earlyblank_out <= v_eblank_reg;
-    cpload_out <= '1' when H_VALID-1 < h_cnt_reg and  h_cnt_reg < CPLOAD_END else
-                  '0';
+  cpload_out <= '1' when
+                H_VALID-1 < h_cnt_reg and  h_cnt_reg < CPLOAD_END else
+                '0';
+  h_eblank_reg <= '0' when
+                  h_cnt_reg > H_VALID-1 else
+                  '1';
   u1:process(clk_in)
   begin
     -- clk positive edge
@@ -63,7 +67,6 @@ begin
       else
         -- end of h back
         if(h_cnt_reg = H_VALID+H_FRONT+H_SYNC+H_BACK-1) then
-          h_eblank_reg <= '1';
           h_cnt_reg <= 0;
           -- end of v back
           if(v_cnt_reg = V_VALID+V_FRONT+V_SYNC+V_BACK-1) then
@@ -97,7 +100,6 @@ begin
           case h_cnt_reg is
             -- end of h valid
             when H_VALID-1 =>
-              h_eblank_reg <= '0';
 
             -- end of h front
             when H_VALID+H_FRONT =>
