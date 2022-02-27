@@ -42,8 +42,7 @@ architecture RTL of ChiinaDazzler is
           h_sync_out : out std_logic;
           v_sync_out : out std_logic;
           h_addr_out  : out integer range 0 to 511;
-          v_addr_out  : out integer range 0 to 1023;
-          cpload_out :  out std_logic
+          v_addr_out  : out integer range 0 to 1023
         );
   end component;
 
@@ -51,7 +50,6 @@ architecture RTL of ChiinaDazzler is
   signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
   signal  vaddr  : integer range 0 to 1023;
-  signal  cpload_sig : std_logic;
 
   --tmp signals
   signal haddr_vec  : std_logic_vector(8 downto 0);
@@ -59,7 +57,6 @@ architecture RTL of ChiinaDazzler is
   signal hvblank : std_logic_vector(1 downto 0);
 
   signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
-  signal  vram_cpload_addr_sig  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
 
   --config signals
@@ -105,8 +102,8 @@ begin
            h_sync_out => hsync,
            v_sync_out => vsync,
            h_addr_out => haddr,
-           v_addr_out => vaddr,
-           cpload_out => cpload_sig);
+           v_addr_out => vaddr
+         );
 
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
