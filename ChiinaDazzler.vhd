@@ -89,11 +89,6 @@ architecture RTL of ChiinaDazzler is
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
 
-  type  cp_byte_type  is array (0 to 31) of std_logic_vector(7 downto 0); -- byte access for loading
-  signal  cp_byte_sig  : cp_byte_type;
-  --signal  cp_loadaddr_sig : integer range 3 to 26;
-  signal  cp_loadaddr_sig : std_logic_vector(4 downto 0);
-
   signal  we_vram_reg : std_logic;
 
   --regs (visible
@@ -118,20 +113,9 @@ begin
   state <= haddr_vec(1 downto 0);
 
   vram_scan_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
-  vram_scan_addr_sig(14 downto 7) <=
-    vaddr_vec(9 downto 2) when cpload_sig = '0' else
-    "11000000";
+  vram_scan_addr_sig(14 downto 7) <= vaddr_vec(9 downto 2);
   vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr_sig(0) <= haddr_vec(0);
-
-  a:for i in 0 to 7 generate
-    color_pallet_regfile(i*2) <= cp_byte_sig((i*3)+3) &
-                                 cp_byte_sig((i*3)+1+3)(7 downto 4);
-    color_pallet_regfile((i*2)+1) <= cp_byte_sig((i*3)+1+3)(3 downto 0) &
-                                     cp_byte_sig((i*3)+2+3);
-  end generate a;
-
-  cp_loadaddr_sig <= haddr_vec(4 downto 0);
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -262,10 +246,6 @@ begin
           when others =>
         -- ???
         end case;
-
-        if(cpload_sig = '1')then
-          cp_byte_sig(to_integer(unsigned(cp_loadaddr_sig))) <= data_vram_io;
-        end if;
 
         case hvblank is
           when "11" =>
