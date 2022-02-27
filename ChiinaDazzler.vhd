@@ -13,7 +13,9 @@ entity ChiinaDazzler is
     reset_in :  in  std_logic;
     hsync_out :  out  std_logic;
     vsync_out :  out  std_logic;
-    rgb_out :  out  std_logic_vector(2 downto 0);
+    r_out : out std_logic_vector(3 downto 0);
+    g_out : out std_logic_vector(3 downto 0);
+    b_out : out std_logic_vector(3 downto 0);
 
     -- MPU interface
     strb_mpu_in : in std_logic;
@@ -96,6 +98,8 @@ architecture RTL of ChiinaDazzler is
 
   --regs (visible
   signal  WDBF_vreg : std_logic_vector(7 downto 0);
+
+  signal rgb_sig  : std_logic_vector(11 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -265,14 +269,18 @@ begin
 
         case hvblank is
           when "11" =>
-            rgb_out <= color_pallet_regfile(cp_outaddr_reg)(2 downto 0);
+            rgb_sig <= color_pallet_regfile(cp_outaddr_reg);
           when others =>
-            rgb_out <= "000";
+            rgb_sig <= "000000000000";
         end case;
 
       end if;
     end if;
   end process;
+
+  r_out <= rgb_sig(11 downto 8);
+  g_out <= rgb_sig(7 downto 4);
+  b_out <= rgb_sig(3 downto 0);
 
   hsync_out <= hsync;
   vsync_out <= vsync;

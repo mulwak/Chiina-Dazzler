@@ -15,7 +15,9 @@ architecture SIM of ChiinaDazzler_TB is
       reset_in :  in  std_logic;
       hsync_out :  out  std_logic;
       vsync_out :  out  std_logic;
-      rgb_out : out std_logic_vector(2 downto 0);
+      r_out : out std_logic_vector(3 downto 0);
+      g_out : out std_logic_vector(3 downto 0);
+      b_out : out std_logic_vector(3 downto 0);
 
       strb_mpu_in : in std_logic;
       cs_mpu_in : in std_logic;
@@ -31,7 +33,7 @@ architecture SIM of ChiinaDazzler_TB is
   end component;
 
   signal T_CLK, T_RESET, T_HSync, T_VSync : std_logic;
-  signal T_RGB  : std_logic_vector(2 downto 0);
+  signal T_R, T_G, T_B : std_logic_vector(3 downto 0);
   signal T_STRB, T_CS : std_logic;
   signal T_DATA : std_logic_vector(7 downto 0);
   signal T_ADDR : std_logic_vector(2 downto 0);
@@ -46,7 +48,9 @@ begin
             reset_in => T_RESET,
             hsync_out => T_HSync,
             vsync_out => T_VSync,
-            rgb_out => T_RGB,
+            r_out => T_R,
+            g_out => T_G,
+            b_out => T_B,
             strb_mpu_in => T_STRB,
             cs_mpu_in => T_CS,
             data_mpu_in => T_DATA,
