@@ -165,6 +165,22 @@ begin
         --vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
+        color_pallet_regfile(0) <= "000000000000";
+        color_pallet_regfile(1) <= "111111111111";
+        color_pallet_regfile(2) <= "111100000000";
+        color_pallet_regfile(3) <= "000011110000";
+        color_pallet_regfile(4) <= "000000001111";
+        color_pallet_regfile(5) <= "111111110000";
+        color_pallet_regfile(6) <= "000011111111";
+        color_pallet_regfile(7) <= "111100001111";
+        color_pallet_regfile(8) <= "000100010001";
+        color_pallet_regfile(9) <= "100010001000";
+        color_pallet_regfile(10) <= "100000000000";
+        color_pallet_regfile(11) <= "000010000000";
+        color_pallet_regfile(12) <= "000000001000";
+        color_pallet_regfile(13) <= "100010000001";
+        color_pallet_regfile(14) <= "000010001000";
+        color_pallet_regfile(15) <= "100000001000";
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
