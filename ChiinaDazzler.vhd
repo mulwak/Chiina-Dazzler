@@ -163,21 +163,21 @@ begin
         read_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <= "000000000000";
-        color_pallet_regfile(1) <= "111111111111";
-        color_pallet_regfile(2) <= "111100000000";
-        color_pallet_regfile(3) <= "000011110000";
+        color_pallet_regfile(1) <= "000011110000";
+        color_pallet_regfile(2) <= "000001010000";
+        color_pallet_regfile(3) <= "000010100000";
         color_pallet_regfile(4) <= "000000001111";
-        color_pallet_regfile(5) <= "111111110000";
-        color_pallet_regfile(6) <= "000011111111";
-        color_pallet_regfile(7) <= "111100001111";
-        color_pallet_regfile(8) <= "000100010001";
-        color_pallet_regfile(9) <= "100010001000";
-        color_pallet_regfile(10) <= "100000000000";
-        color_pallet_regfile(11) <= "000010000000";
-        color_pallet_regfile(12) <= "000000001000";
-        color_pallet_regfile(13) <= "100010000001";
-        color_pallet_regfile(14) <= "000010001000";
-        color_pallet_regfile(15) <= "100000001000";
+        color_pallet_regfile(5) <= "000001011111";
+        color_pallet_regfile(6) <= "000010101111";
+        color_pallet_regfile(7) <= "000011111111";
+        color_pallet_regfile(8) <= "111100000000";
+        color_pallet_regfile(9) <= "111101010000";
+        color_pallet_regfile(10) <= "111110100000";
+        color_pallet_regfile(11) <= "111111110000";
+        color_pallet_regfile(12) <= "111100001111";
+        color_pallet_regfile(13) <= "111101011111";
+        color_pallet_regfile(14) <= "111110101111";
+        color_pallet_regfile(15) <= "111111111111";
       else -- not reset
         -- every clock jobs
         data_buff_reg1 <= data_buff_reg0;
@@ -246,13 +246,6 @@ begin
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
               --write 2
               nedge_write_flag_reg <= '0';
-
-              --if(nedge_write_flag_reg = '1')then
-                --vram_writecursor_reg <=
-                 --std_logic_vector(unsigned(vram_writecursor_reg)+1);
-               --end if;
-
-              --we_vram_out <= '1'; -- write disable == write trig
           when "00" =>
             -- load 1
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
