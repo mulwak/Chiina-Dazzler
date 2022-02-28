@@ -232,42 +232,44 @@ begin
           end case;
         end if;
 
-          case state is
-            when "00" | "01" =>
-              addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
-              oe_vram_out <= '0'; -- out enable
-            when others =>
-              -- ???
-          end case;
+        case state is
+          when "00" | "01" =>
+            addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
+            oe_vram_out <= '0'; -- out enable
+          when others =>
+          -- ???
+        end case;
 
         case state is
           when "01" =>
             lut_que_reg0 <= data_vram_io(3 downto 0);
             -- load 2
-            cp_outaddr_reg <= to_integer(unsigned(data_vram_io(7 downto 4)));
+            cp_outaddr_reg <=
+                 to_integer(unsigned(data_vram_io(7 downto 4)));
           when "10" =>
             lut_que_reg1 <= data_vram_io(7 downto 4);
             lut_que_reg2 <= data_vram_io(3 downto 0);
 
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
               -- write 1
-              addr_vram_out <= write_frame_reg & vram_writecursor_reg;
+            addr_vram_out <= write_frame_reg & vram_writecursor_reg;
 
-              if(write_flag_reg = '1')then
-                nedge_write_flag_reg <= '1';
-                write_flag_reg <= '0';
-              end if;
+            if(write_flag_reg = '1')then
+              nedge_write_flag_reg <= '1';
+              write_flag_reg <= '0';
+            end if;
 
-              oe_vram_out <= '1'; -- out disable
+            oe_vram_out <= '1'; -- out disable
           when "11" =>
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
               --write 2
-              nedge_write_flag_reg <= '0';
+            nedge_write_flag_reg <= '0';
 
-              if(nedge_write_flag_reg = '1' and write_countup_flag = '1')then
-                vram_writecursor_reg <=
-               std_logic_vector(unsigned(vram_writecursor_reg)+1);
-              end if;
+            if(nedge_write_flag_reg = '1' and
+                  write_countup_flag = '1')then
+              vram_writecursor_reg <=
+                 std_logic_vector(unsigned(vram_writecursor_reg)+1);
+           end if;
 
           when "00" =>
             -- load 1
