@@ -88,6 +88,10 @@ architecture RTL of ChiinaDazzler is
   signal  vram_writecursor_reg : std_logic_vector(14 downto 0);
   signal  write_countup_flag :std_logic;
 
+  signal  tw_shift_reg  : std_logic_vector(6 downto 0);
+  signal  mode_flag_reg : std_logic_vector(3 downto 0);
+  signal  mode_sig  : std_logic;
+
   type regfile_type is array (0 to 15) of std_logic_vector(11 downto 0);
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
@@ -115,6 +119,12 @@ begin
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
   state <= haddr_vec(1 downto 0);
   line_state_sig <= vaddr_vec(1 downto 0);
+
+  with line_state_sig select
+    mode_sig <= mode_flag_reg(3) when "00",
+                mode_flag_reg(2) when "01",
+                mode_flag_reg(1) when "10",
+                mode_flag_reg(0) when others;
 
   with line_state_sig select
     vram_scan_addr_sig(16 downto 15) <= read_frame_L0_reg when "00",
@@ -211,10 +221,12 @@ begin
               --end case;
             -- CFG
             when "001" =>
+              mode_flag_reg <= data_buff_reg1(7 downto 4);
               write_countup_flag <= data_buff_reg1(0);
             -- VMAH
             when "010" =>
-              vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
+              vram_writecursor_reg(6 downto 0) <=
+                                  data_buff_reg1(6 downto 0);
             --VMAV
             when "011" =>
               vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
