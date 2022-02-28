@@ -94,8 +94,24 @@ begin
     T_STRB <= '0'; wait for 500 ns;
     T_DATA <= "00000000"; wait for 250 ns;
     T_STRB <= '1'; wait for 500 ns;
-    T_ADDR <= "100";
 
+    T_ADDR <= "001"; wait for 10 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "00000001"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+    T_ADDR <= "010"; wait for 10 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "00000000"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+    T_ADDR <= "011"; wait for 10 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "00000000"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+
+    T_ADDR <= "100";
     for T_I in 0 to 5000 loop
       wait for 100 ns;
       T_STRB <= '0'; wait for 500 ns;

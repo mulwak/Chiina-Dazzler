@@ -80,9 +80,7 @@ architecture RTL of ChiinaDazzler is
   signal  lut_que_reg2 : std_logic_vector(3 downto 0);
   signal  read_frame_reg  : std_logic_vector(1 downto 0);
   signal  write_frame_reg  : std_logic_vector(1 downto 0);
-  signal  vram_writecursor_v_reg  : std_logic_vector(7 downto 0);
-  signal  vram_writecursor_h_reg  : std_logic_vector(6 downto 0);
-  signal  vram_writecursor_sig : std_logic_vector(16 downto 0);
+  signal  vram_writecursor_reg : std_logic_vector(14 downto 0);
   signal  write_countup_flag :std_logic;
 
   type regfile_type is array (0 to 15) of std_logic_vector(11 downto 0);
@@ -117,10 +115,6 @@ begin
   vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr_sig(0) <= haddr_vec(0);
 
-  vram_writecursor_sig(16 downto 15) <= write_frame_reg;
-  vram_writecursor_sig(14 downto 7) <= vram_writecursor_v_reg;
-  vram_writecursor_sig(6 downto 0) <= vram_writecursor_h_reg;
-
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
   begin
@@ -147,9 +141,6 @@ begin
         if(nedge_write_flag_reg = '1')then
           data_vram_io <= WDBF_vreg;
           we_vram_reg <= '0';
-          if(write_countup_flag = '1')then
-            vram_writecursor_h_reg <= std_logic_vector(unsigned(vram_writecursor_h_reg)+1);
-          end if;
         else
           data_vram_io <= "ZZZZZZZZ";
           we_vram_reg <= '1';
@@ -171,6 +162,7 @@ begin
         --lut_que_reg2 <= "0000";
         --vram_writecursor_reg <= "00000000000000000";
         read_frame_reg <= "00";
+        write_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <= "000000000000";
         color_pallet_regfile(1) <= "000011110000";
@@ -203,26 +195,29 @@ begin
           case addr_buff_reg1 is
             -- CMD
             when "000" =>
-              case data_buff_reg1 is
+              --case data_buff_reg1 is
                 -- cursor reset commandis
-                when "00000000" =>
-                  vram_writecursor_v_reg <= "00000000";
-                  vram_writecursor_h_reg <= "0000000";
-                when others =>
-              end case;
+                --when "00000000" =>
+                  --vram_writecursor_reg <= "000000000000000";
+                --when others =>
+              --end case;
             -- CFG
             when "001" =>
               write_countup_flag <= data_buff_reg1(0);
+            -- VMAH
             when "010" =>
-              vram_writecursor_h_reg <= data_buff_reg1(6 downto 0);
+              vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
+            --VMAV
             when "011" =>
-              vram_writecursor_v_reg <= data_buff_reg1;
+              vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
             -- WDBF
             when "100" =>
               WDBF_vreg <= data_buff_reg1;
               write_flag_reg <= '1';
+            -- RF
             when "101" =>
               read_frame_reg <= data_buff_reg1(1 downto 0);
+            -- WF
             when "110" =>
               write_frame_reg <= data_buff_reg1(1 downto 0);
             when others =>
@@ -248,7 +243,7 @@ begin
 
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
               -- write 1
-              addr_vram_out <= vram_writecursor_sig;
+              addr_vram_out <= write_frame_reg & vram_writecursor_reg;
 
               if(write_flag_reg = '1')then
                 nedge_write_flag_reg <= '1';
@@ -260,6 +255,12 @@ begin
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
               --write 2
               nedge_write_flag_reg <= '0';
+
+              if(nedge_write_flag_reg = '1' and write_countup_flag = '1')then
+                vram_writecursor_reg <=
+               std_logic_vector(unsigned(vram_writecursor_reg)+1);
+              end if;
+
           when "00" =>
             -- load 1
             cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
