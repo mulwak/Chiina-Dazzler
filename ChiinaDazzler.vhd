@@ -58,6 +58,7 @@ architecture RTL of ChiinaDazzler is
 
   signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
+  signal  line_state_sig  : std_logic_vector(1 downto 0);
 
   --config signals
   signal  UPDOWN_sig, RCSEC_sig : std_logic;
@@ -78,7 +79,11 @@ architecture RTL of ChiinaDazzler is
   signal  lut_que_reg0 : std_logic_vector(3 downto 0);
   signal  lut_que_reg1 : std_logic_vector(3 downto 0);
   signal  lut_que_reg2 : std_logic_vector(3 downto 0);
-  signal  read_frame_reg  : std_logic_vector(1 downto 0);
+  signal  read_frame_L0_reg  : std_logic_vector(1 downto 0);
+  signal  read_frame_L1_reg  : std_logic_vector(1 downto 0);
+  signal  read_frame_L2_reg  : std_logic_vector(1 downto 0);
+  signal  read_frame_L3_reg  : std_logic_vector(1 downto 0);
+  signal  read_frame_bf_reg  : std_logic_vector(7 downto 0);
   signal  write_frame_reg  : std_logic_vector(1 downto 0);
   signal  vram_writecursor_reg : std_logic_vector(14 downto 0);
   signal  write_countup_flag :std_logic;
@@ -109,8 +114,13 @@ begin
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
   state <= haddr_vec(1 downto 0);
+  line_state_sig <= vaddr_vec(1 downto 0);
 
-  vram_scan_addr_sig(16 downto 15) <= read_frame_reg(1 downto 0);
+  with line_state_sig select
+    vram_scan_addr_sig(16 downto 15) <= read_frame_L0_reg when "00",
+                                        read_frame_L1_reg when "01",
+                                        read_frame_L2_reg when "10",
+                                        read_frame_L3_reg when others;
   vram_scan_addr_sig(14 downto 7) <= vaddr_vec(9 downto 2);
   vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
   vram_scan_addr_sig(0) <= haddr_vec(0);
@@ -161,8 +171,6 @@ begin
         --lut_que_reg1 <= "0000";
         --lut_que_reg2 <= "0000";
         --vram_writecursor_reg <= "00000000000000000";
-        read_frame_reg <= "00";
-        write_frame_reg <= "00";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <= "000000000000";
         color_pallet_regfile(1) <= "000011110000";
@@ -216,7 +224,7 @@ begin
               write_flag_reg <= '1';
             -- RF
             when "101" =>
-              read_frame_reg <= data_buff_reg1(1 downto 0);
+              read_frame_bf_reg <= data_buff_reg1;
             -- WF
             when "110" =>
               write_frame_reg <= data_buff_reg1(1 downto 0);
@@ -273,6 +281,15 @@ begin
             rgb_sig <= color_pallet_regfile(cp_outaddr_reg);
           when others =>
             rgb_sig <= "000000000000";
+        end case;
+
+        case vblank is
+          when '0' =>
+            read_frame_L0_reg <= read_frame_bf_reg(7 downto 6);
+            read_frame_L1_reg <= read_frame_bf_reg(5 downto 4);
+            read_frame_L2_reg <= read_frame_bf_reg(3 downto 2);
+            read_frame_L3_reg <= read_frame_bf_reg(1 downto 0);
+          when others =>
         end case;
 
       end if;
