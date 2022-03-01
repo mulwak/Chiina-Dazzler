@@ -327,14 +327,6 @@ begin
           end case;
         end if;
 
-        -- real color output. clocking is needed as pallet loading.
-        case hvblank is
-          when "11" =>
-            rgb_sig <= color_pallet_regfile(cp_outaddr_reg);
-          when others =>
-            rgb_sig <= "000000000000";
-        end case;
-
         -- output flame change without chiratsuki.
         case vblank is
           when '0' =>
@@ -349,14 +341,17 @@ begin
     end if;
   end process;
 
-  r_out <= rgb_sig(11 downto 8);
-  g_out <= rgb_sig(7 downto 4);
-  b_out <= rgb_sig(3 downto 0);
-
   hsync_out <= hsync;
   vsync_out <= vsync;
 
   hvblank <= hblank & vblank;
+  with hvblank select
+    rgb_sig <= color_pallet_regfile(cp_outaddr_reg) when "11",
+               "000000000000" when others;
+
+  r_out <= rgb_sig(11 downto 8);
+  g_out <= rgb_sig(7 downto 4);
+  b_out <= rgb_sig(3 downto 0);
 
   we_vram_out <= we_vram_reg or clk_in;
 
