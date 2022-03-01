@@ -97,7 +97,7 @@ begin
 
     T_ADDR <= "001"; wait for 10 ns;
     T_STRB <= '0'; wait for 500 ns;
-    T_DATA <= "00000001"; wait for 250 ns;
+    T_DATA <= "01000001"; wait for 250 ns;
     T_STRB <= '1'; wait for 500 ns;
 
     T_ADDR <= "010"; wait for 10 ns;
@@ -118,6 +118,11 @@ begin
     T_ADDR <= "110"; wait for 10 ns;
     T_STRB <= '0'; wait for 500 ns;
     T_DATA <= "00000011"; wait for 250 ns;
+    T_STRB <= '1'; wait for 500 ns;
+
+    T_ADDR <= "111"; wait for 10 ns;
+    T_STRB <= '0'; wait for 500 ns;
+    T_DATA <= "00000001"; wait for 250 ns;
     T_STRB <= '1'; wait for 500 ns;
 
     T_ADDR <= "100";

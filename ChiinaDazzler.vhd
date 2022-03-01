@@ -58,6 +58,7 @@ architecture RTL of ChiinaDazzler is
 
   signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
   signal  state : std_logic_vector(1 downto 0);
+  signal  exstate : std_logic_vector(2 downto 0);
   signal  line_state_sig  : std_logic_vector(1 downto 0);
 
   --config signals
@@ -101,6 +102,9 @@ architecture RTL of ChiinaDazzler is
   --regs (visible
   signal  WDBF_vreg : std_logic_vector(7 downto 0);
 
+  signal  tw_color_0_reg  : std_logic_vector(3 downto 0);
+  signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
+
   signal rgb_sig  : std_logic_vector(11 downto 0);
 
 begin
@@ -118,6 +122,7 @@ begin
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
   state <= haddr_vec(1 downto 0);
+  exstate <= haddr_vec(2 downto 0);
   line_state_sig <= vaddr_vec(1 downto 0);
 
   with line_state_sig select
@@ -131,9 +136,10 @@ begin
                                         read_frame_L1_reg when "01",
                                         read_frame_L2_reg when "10",
                                         read_frame_L3_reg when others;
-  vram_scan_addr_sig(14 downto 7) <= vaddr_vec(9 downto 2);
-  vram_scan_addr_sig(6 downto 1) <= haddr_vec(7 downto 2);
-  vram_scan_addr_sig(0) <= haddr_vec(0);
+  with mode_sig select
+    vram_scan_addr_sig(14 downto 0) <=
+      vaddr_vec(9 downto 2)&haddr_vec(7 downto 2)&haddr_vec(0) when '0',
+      "00"&vaddr_vec(9 downto 2)&haddr_vec(7 downto 3) when others;
 
   -- input mpu data
   process(strb_mpu_in,cs_mpu_in,reset_in)
@@ -240,6 +246,10 @@ begin
             -- WF
             when "110" =>
               write_frame_reg <= data_buff_reg1(1 downto 0);
+            -- TWCR
+            when "111" =>
+              tw_color_0_reg <= data_buff_reg1(7 downto 4);
+              tw_color_1_reg <= data_buff_reg1(3 downto 0);
             when others =>
           end case;
         end if;
@@ -252,17 +262,9 @@ begin
           -- ???
         end case;
 
+        -- write
         case state is
-          when "01" =>
-            lut_que_reg0 <= data_vram_io(3 downto 0);
-            -- load 2
-            cp_outaddr_reg <=
-                 to_integer(unsigned(data_vram_io(7 downto 4)));
           when "10" =>
-            lut_que_reg1 <= data_vram_io(7 downto 4);
-            lut_que_reg2 <= data_vram_io(3 downto 0);
-
-            cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
               -- write 1
             addr_vram_out <= write_frame_reg & vram_writecursor_reg;
 
@@ -273,7 +275,6 @@ begin
 
             oe_vram_out <= '1'; -- out disable
           when "11" =>
-            cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
               --write 2
             nedge_write_flag_reg <= '0';
 
@@ -282,14 +283,51 @@ begin
               vram_writecursor_reg <=
                  std_logic_vector(unsigned(vram_writecursor_reg)+1);
            end if;
-
-          when "00" =>
-            -- load 1
-            cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
           when others =>
-        -- ???
         end case;
 
+        -- read and output
+        if( mode_sig = '0' )then  -- 16 colors mode
+          case state is
+            when "01" =>
+              lut_que_reg0 <= data_vram_io(3 downto 0);
+              -- load 2
+              cp_outaddr_reg <=
+                   to_integer(unsigned(data_vram_io(7 downto 4)));
+            when "10" =>
+              lut_que_reg1 <= data_vram_io(7 downto 4);
+              lut_que_reg2 <= data_vram_io(3 downto 0);
+
+              cp_outaddr_reg <= to_integer(unsigned(lut_que_reg0));
+            when "11" =>
+              cp_outaddr_reg <= to_integer(unsigned(lut_que_reg1));
+            when "00" =>
+              -- load 1
+              cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
+            when others =>
+          end case;
+        else  -- 2 colors mode
+          case exstate is
+            when "001" =>
+              tw_shift_reg <= data_vram_io(6 downto 0);
+              case data_vram_io(7) is
+                when '0'|'L' =>
+                  cp_outaddr_reg <= to_integer(unsigned(tw_color_0_reg));
+                when others =>
+                  cp_outaddr_reg <= to_integer(unsigned(tw_color_1_reg));
+              end case;
+            when others =>
+              tw_shift_reg <= tw_shift_reg(5 downto 0) & 'X';
+              case tw_shift_reg(6) is
+                when '0'|'L' =>
+                  cp_outaddr_reg <= to_integer(unsigned(tw_color_0_reg));
+                when others =>
+                  cp_outaddr_reg <= to_integer(unsigned(tw_color_1_reg));
+              end case;
+          end case;
+        end if;
+
+        -- real color output. clocking is needed as pallet loading.
         case hvblank is
           when "11" =>
             rgb_sig <= color_pallet_regfile(cp_outaddr_reg);
@@ -297,6 +335,7 @@ begin
             rgb_sig <= "000000000000";
         end case;
 
+        -- output flame change without chiratsuki.
         case vblank is
           when '0' =>
             read_frame_L0_reg <= read_frame_bf_reg(7 downto 6);
