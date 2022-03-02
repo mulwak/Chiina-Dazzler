@@ -188,16 +188,16 @@ begin
         --lut_que_reg2 <= "0000";
         --vram_writecursor_reg <= "00000000000000000";
         nedge_write_flag_reg <= '0';
-        color_pallet_regfile(0) <= "000000000000";
-        color_pallet_regfile(1) <= "000011110000";
-        color_pallet_regfile(2) <= "000001010000";
-        color_pallet_regfile(3) <= "000010100000";
-        color_pallet_regfile(4) <= "000000001111";
-        color_pallet_regfile(5) <= "000001011111";
-        color_pallet_regfile(6) <= "000010101111";
-        color_pallet_regfile(7) <= "000011111111";
-        color_pallet_regfile(8) <= "111100000000";
-        color_pallet_regfile(9) <= "111101010000";
+        color_pallet_regfile(0) <=  "000000000000";
+        color_pallet_regfile(2) <=  "000001010000";
+        color_pallet_regfile(3) <=  "000010100000";
+        color_pallet_regfile(1) <=  "000011110000";
+        color_pallet_regfile(4) <=  "000000001111";
+        color_pallet_regfile(5) <=  "000001011111";
+        color_pallet_regfile(6) <=  "000010101111";
+        color_pallet_regfile(7) <=  "000011111111";
+        color_pallet_regfile(8) <=  "111100000000";
+        color_pallet_regfile(9) <=  "111101010000";
         color_pallet_regfile(10) <= "111110100000";
         color_pallet_regfile(11) <= "111111110000";
         color_pallet_regfile(12) <= "111100001111";
@@ -246,7 +246,7 @@ begin
             -- WF
             when "110" =>
               write_frame_reg <= data_buff_reg1(1 downto 0);
-            -- TWCR
+            -- TCP
             when "111" =>
               tw_color_0_reg <= data_buff_reg1(7 downto 4);
               tw_color_1_reg <= data_buff_reg1(3 downto 0);
