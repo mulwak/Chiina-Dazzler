@@ -189,9 +189,9 @@ begin
         --vram_writecursor_reg <= "00000000000000000";
         nedge_write_flag_reg <= '0';
         color_pallet_regfile(0) <=  "000000";
-        color_pallet_regfile(2) <=  "000100";
-        color_pallet_regfile(3) <=  "001000";
-        color_pallet_regfile(1) <=  "001100";
+        color_pallet_regfile(1) <=  "000100";
+        color_pallet_regfile(2) <=  "001000";
+        color_pallet_regfile(3) <=  "001100";
         color_pallet_regfile(4) <=  "000011";
         color_pallet_regfile(5) <=  "000111";
         color_pallet_regfile(6) <=  "001011";
