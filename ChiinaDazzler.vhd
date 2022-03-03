@@ -105,7 +105,7 @@ architecture RTL of ChiinaDazzler is
   signal  tw_color_0_reg  : std_logic_vector(3 downto 0);
   signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
 
-  signal rgb_sig  : std_logic_vector(5 downto 0);
+  signal rgb_reg  : std_logic_vector(5 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -337,6 +337,12 @@ begin
           when others =>
         end case;
 
+        if( hvblank = "11" )then
+          rgb_reg <= color_pallet_regfile(cp_outaddr_reg);
+        else
+          rgb_reg <= "000000";
+        end if;
+
       end if;
     end if;
   end process;
@@ -345,13 +351,10 @@ begin
   vsync_out <= vsync;
 
   hvblank <= hblank & vblank;
-  with hvblank select
-    rgb_sig <= color_pallet_regfile(cp_outaddr_reg) when "11",
-               "000000" when others;
 
-  r_out <= rgb_sig(5 downto 4);
-  g_out <= rgb_sig(3 downto 2);
-  b_out <= rgb_sig(1 downto 0);
+  r_out <= rgb_reg(5 downto 4);
+  g_out <= rgb_reg(3 downto 2);
+  b_out <= rgb_reg(1 downto 0);
 
   we_vram_out <= we_vram_reg or clk_in;
 
