@@ -247,7 +247,7 @@ begin
                 when '0' =>
                   vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
                 when others =>
-                  vram_writecursor_reg(12 downto 5) <= data_buff_reg1;
+                  vram_writecursor_reg(14 downto 5) <= "00"&data_buff_reg1;
               end case;
             -- WDBF
             when "100" =>
