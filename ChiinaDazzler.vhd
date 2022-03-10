@@ -66,10 +66,13 @@ architecture RTL of ChiinaDazzler is
   signal  cursor_config : std_logic_vector(1 downto 0);
 
   --regs
+  signal  data_buff_regS : std_logic_vector(7 downto 0); -- mpu strb
   signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
   signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
+  signal  addr_buff_regS : std_logic_vector(2 downto 0);
   signal  addr_buff_reg0 : std_logic_vector(2 downto 0);
   signal  addr_buff_reg1 : std_logic_vector(2 downto 0);
+  signal  cmd_flag_regS : std_logic;
   signal  cmd_flag_reg0 : std_logic;
   signal  cmd_flag_reg1 : std_logic;
   signal  cmd_flag_reg2 : std_logic;
@@ -146,14 +149,12 @@ begin
   process(strb_mpu_in,cs_mpu_in,reset_in)
   begin
     if(reset_in = '0')then -- async reset
-      --data_buff_reg0 <= "00000000";
-      --addr_buff_reg0 <= "000";
-      cmd_flag_reg0 <= '0';
+      cmd_flag_regS <= '0';
     elsif(strb_mpu_in'event and strb_mpu_in = '1' and cs_mpu_in = '0')then -- strb edge and cs
       if(reset_in = '1')then
-        data_buff_reg0 <= data_mpu_in;
-        addr_buff_reg0 <= addr_mpu_in;
-        cmd_flag_reg0 <= not cmd_flag_reg0;
+        data_buff_regS <= data_mpu_in;
+        addr_buff_regS <= addr_mpu_in;
+        cmd_flag_regS <= not cmd_flag_reg0;
       end if;
     end if; -- end strb edge
   end process;
@@ -207,6 +208,9 @@ begin
         color_pallet_regfile(15) <= "111111";
       else -- not reset
         -- every clock jobs
+        data_buff_reg0 <= data_buff_regS;
+        addr_buff_reg0 <= addr_buff_regS;
+        cmd_flag_reg0 <= cmd_flag_regS;
         data_buff_reg1 <= data_buff_reg0;
         addr_buff_reg1 <= addr_buff_reg0;
         cmd_flag_reg1 <= cmd_flag_reg0;
