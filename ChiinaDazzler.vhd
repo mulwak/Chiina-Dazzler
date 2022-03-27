@@ -3,25 +3,16 @@
 -- This VHDL source is the top level module.
 library ieee;
 use ieee.std_logic_1164.all;
-<<<<<<< HEAD
 use ieee.numeric_std.all;
-=======
-use ieee.std_logic_unsigned.all;
-use ieee.std_logic_arith.all;
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
 
 entity ChiinaDazzler is
   port
   (
-<<<<<<< HEAD
     -- Board I/O
-=======
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
     clk_in :  in  std_logic;
     reset_in :  in  std_logic;
     hsync_out :  out  std_logic;
     vsync_out :  out  std_logic;
-<<<<<<< HEAD
     r_out : out std_logic_vector(1 downto 0);
     g_out : out std_logic_vector(1 downto 0);
     b_out : out std_logic_vector(1 downto 0);
@@ -37,11 +28,6 @@ entity ChiinaDazzler is
     we_vram_out : out std_logic;
     data_vram_io : inout std_logic_vector(7 downto 0);
     addr_vram_out : out std_logic_vector(16 downto 0)
-=======
-    r_out :  out  std_logic;
-    g_out :  out  std_logic;
-    b_out :  out  std_logic
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
   );
 end ChiinaDazzler;
 
@@ -60,7 +46,6 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
-<<<<<<< HEAD
   --crtc signals
   signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
@@ -125,12 +110,6 @@ architecture RTL of ChiinaDazzler is
   signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
 
   signal rgb_reg  : std_logic_vector(5 downto 0);
-=======
-  signal  hblank, vblank, hsync, vsync  :  std_logic;
-  signal haddr  : integer range 0 to 511;
-  signal vaddr  : integer range 0 to 1023;
-  signal ugoki_reg  : integer range 0 to 255;
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
 
 begin
   U01 : VideoTimingGen
@@ -144,7 +123,6 @@ begin
            v_addr_out => vaddr
          );
 
-<<<<<<< HEAD
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
   state <= haddr_vec(1 downto 0);
@@ -382,54 +360,10 @@ begin
           rgb_reg <= "000000";
         end if;
 
-=======
-  -- edge test
-  process(clk_in)
-  begin
-    if(clk_in'event and clk_in = '1')then
-      hsync_out <= hsync;
-      vsync_out <= vsync;
-      if(hblank = '1' and vblank = '1')then -- valid
-        g_out <= '1';
-
-        case vaddr is
-          when 0 to 15 | 767 downto 753 => -- top or bottom
-            b_out <= '1';
-
-            if vaddr=0 or vaddr=1 or vaddr=2 or vaddr=3 or
-              vaddr=767 or vaddr=766 or vaddr=765 or vaddr=764 then
-              r_out <= '1';
-            else
-              r_out <= '0';
-            end if;
-
-          when others=>
-
-            case haddr is
-              when 0 to 3 | 255 downto 252 => -- left or right
-                b_out <= '1';
-
-                if haddr=0 or haddr=255 then
-                  r_out <= '1';
-                else
-                  r_out <= '0';
-                end if;
-
-              when others=>
-                b_out <= '0';
-            end case;
-
-        end case;
-      else -- not valid
-        r_out <= '0';
-        g_out <= '0';
-        b_out <= '0';
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
       end if;
     end if;
   end process;
 
-<<<<<<< HEAD
   hsync_out <= hsync;
   vsync_out <= vsync;
 
@@ -442,7 +376,4 @@ begin
   we_vram_out <= we_vram_reg or clk_in;
 
 end RTL;
-=======
-  end RTL;
->>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
 
