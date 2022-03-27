@@ -15,6 +15,7 @@ architecture SIM of ChiinaDazzler_TB is
       reset_in :  in  std_logic;
       hsync_out :  out  std_logic;
       vsync_out :  out  std_logic;
+<<<<<<< HEAD
       r_out : out std_logic_vector(1 downto 0);
       g_out : out std_logic_vector(1 downto 0);
       b_out : out std_logic_vector(1 downto 0);
@@ -30,6 +31,12 @@ architecture SIM of ChiinaDazzler_TB is
       data_vram_io : inout std_logic_vector(7 downto 0);
       addr_vram_out : out std_logic_vector(16 downto 0)
   );
+=======
+      r_out :  out  std_logic;
+      g_out :  out  std_logic;
+      b_out :  out  std_logic
+    );
+>>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
   end component;
 
   signal T_CLK, T_RESET, T_HSync, T_VSync : std_logic;
@@ -48,6 +55,7 @@ begin
             reset_in => T_RESET,
             hsync_out => T_HSync,
             vsync_out => T_VSync,
+<<<<<<< HEAD
             r_out => T_R,
             g_out => T_G,
             b_out => T_B,
@@ -59,6 +67,9 @@ begin
             we_vram_out => T_VRAMWE,
             data_vram_io => T_VRAMDATA,
             addr_vram_out => T_VRAMADDR
+=======
+            r_out => T_R, g_out => T_G, b_out => T_B
+>>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
           );
   process
   begin
@@ -89,6 +100,7 @@ begin
     T_ADDR <= "000";
     wait for 10 ns;
     T_RESET <= '0'; wait for 200 ns;
+<<<<<<< HEAD
     T_RESET <= '1'; wait for 25 ns;
 
     T_STRB <= '0'; wait for 500 ns;
@@ -158,6 +170,9 @@ begin
       T_STRB <= '1'; wait for 500 ns;
     end loop;
 
+=======
+    T_RESET <= '1'; wait for 20 ms;
+>>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
     assert false
     report "Simulation Complete!"
     severity Failure;

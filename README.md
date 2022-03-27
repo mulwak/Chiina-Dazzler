@@ -1,4 +1,5 @@
 # Chiina-Dazzler
+<<<<<<< HEAD
 6502 Graphics Board on CPLD
 http://ponzu840w.starfree.jp/blog/blog.html?id=00030
 
@@ -14,4 +15,14 @@ http://ponzu840w.starfree.jp/blog/blog.html?id=00030
 
 # 使い方
 これから書く
+=======
+6502 Graphics Board
+まだまだ未完成
+
+# 予定する仕様
+- MAX Vにプログラミング
+- 256\*192（DS画面サイズ)のフレームバッファ1か2枚を1024\*768（XGA）に引き延ばして表示
+- 4bitカラーパレット、12bit（RGB各4bit）DAC出力
+- 線分描画などのアクセラレーション
+>>>>>>> d3fd3c6d3d2fda0836daca5018670a0aff514680
 
