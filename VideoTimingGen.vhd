@@ -22,8 +22,8 @@ architecture RTL of VideoTimingGen is
   -- clock length
   -- H
   constant H_VALID : integer := 256;
-  constant H_FRONT : integer := 7;
-  constant H_SYNC : integer := 35;
+  constant H_FRONT : integer := 6;
+  constant H_SYNC : integer := 34;
   constant H_BACK : integer := 40;
   -- V
   constant V_VALID : integer := 768;
