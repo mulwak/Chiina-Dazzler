@@ -15,9 +15,9 @@ architecture SIM of ChiinaDazzler_TB is
       reset_in :  in  std_logic;
       hsync_out :  out  std_logic;
       vsync_out :  out  std_logic;
-      r_out : out std_logic_vector(1 downto 0);
+      r_out : out std_logic;
       g_out : out std_logic_vector(1 downto 0);
-      b_out : out std_logic_vector(1 downto 0);
+      b_out : out std_logic;
 
       strb_mpu_in : in std_logic;
       cs_mpu_in : in std_logic;
@@ -33,7 +33,8 @@ architecture SIM of ChiinaDazzler_TB is
   end component;
 
   signal T_CLK, T_RESET, T_HSync, T_VSync : std_logic;
-  signal T_R, T_G, T_B : std_logic_vector(1 downto 0);
+  signal T_R, T_B : std_logic;
+  signal T_G  : std_logic_vector(1 downto 0);
   signal T_STRB, T_CS : std_logic;
   signal T_DATA : std_logic_vector(7 downto 0);
   signal T_ADDR : std_logic_vector(2 downto 0);
@@ -76,6 +77,8 @@ begin
           T_VRAMDATA <= "LHLL"&"LHLH";
         when "LHLL"&"LHLH" =>
           T_VRAMDATA <= "LHHL"&"LHHH";
+        when "LHHL"&"LHHH" =>
+          T_VRAMDATA <= "HLLL"&"HLLH";
         when others =>
           T_VRAMDATA <= "LLLL"&"LLLH";
       end case;
@@ -89,7 +92,7 @@ begin
     T_ADDR <= "000";
     wait for 10 ns;
     T_RESET <= '0'; wait for 200 ns;
-    T_RESET <= '1'; wait for 25 ns;
+    T_RESET <= '1'; wait for 25 ns;   -- reset fin
 
     T_STRB <= '0'; wait for 500 ns;
     T_DATA <= "00000000"; wait for 250 ns;
@@ -97,7 +100,7 @@ begin
 
     T_ADDR <= "001"; wait for 10 ns;  -- CFG
     T_STRB <= '0'; wait for 500 ns;
-    T_DATA <= "01000001"; wait for 250 ns;
+    T_DATA <= "01000001"; wait for 250 ns; -- color mode=16,2,16,16, writing mode=16, count up on
     T_STRB <= '1'; wait for 500 ns;
 
     T_ADDR <= "010"; wait for 10 ns; -- VMAH
@@ -112,7 +115,7 @@ begin
 
     T_ADDR <= "001"; wait for 10 ns;  -- CFG
     T_STRB <= '0'; wait for 500 ns;
-    T_DATA <= "01000011"; wait for 250 ns;
+    T_DATA <= "01000011"; wait for 250 ns;  -- writing mode=2
     T_STRB <= '1'; wait for 500 ns;
 
     T_ADDR <= "010"; wait for 10 ns; -- VMAH
