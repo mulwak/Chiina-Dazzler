@@ -13,9 +13,9 @@ entity ChiinaDazzler is
     reset_in :  in  std_logic;
     hsync_out :  out  std_logic;
     vsync_out :  out  std_logic;
-    r_out : out std_logic_vector(1 downto 0);
+    r_out : out std_logic;
     g_out : out std_logic_vector(1 downto 0);
-    b_out : out std_logic_vector(1 downto 0);
+    b_out : out std_logic;
 
     -- MPU interface
     strb_mpu_in : in std_logic;
@@ -97,7 +97,7 @@ architecture RTL of ChiinaDazzler is
   signal  mode_flag_reg : std_logic_vector(3 downto 0);
   signal  mode_sig  : std_logic;
 
-  type regfile_type is array (0 to 15) of std_logic_vector(5 downto 0);
+  type regfile_type is array (0 to 15) of std_logic_vector(3 downto 0);
   signal color_pallet_regfile  : regfile_type;
   signal cp_outaddr_reg  : integer range 0 to 15;
 
@@ -109,7 +109,7 @@ architecture RTL of ChiinaDazzler is
   signal  tw_color_0_reg  : std_logic_vector(3 downto 0);
   signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
 
-  signal rgb_reg  : std_logic_vector(5 downto 0);
+  signal rgb_reg  : std_logic_vector(3 downto 0);
 
 begin
   U01 : VideoTimingGen
@@ -190,22 +190,22 @@ begin
         --lut_que_reg2 <= "0000";
         --vram_writecursor_reg <= "00000000000000000";
         nedge_write_flag_reg <= '0';
-        color_pallet_regfile(0) <=  "000000";
-        color_pallet_regfile(1) <=  "000100";
-        color_pallet_regfile(2) <=  "001000";
-        color_pallet_regfile(3) <=  "001100";
-        color_pallet_regfile(4) <=  "000011";
-        color_pallet_regfile(5) <=  "000111";
-        color_pallet_regfile(6) <=  "001011";
-        color_pallet_regfile(7) <=  "001111";
-        color_pallet_regfile(8) <=  "110000";
-        color_pallet_regfile(9) <=  "110100";
-        color_pallet_regfile(10) <= "111000";
-        color_pallet_regfile(11) <= "111100";
-        color_pallet_regfile(12) <= "110011";
-        color_pallet_regfile(13) <= "110111";
-        color_pallet_regfile(14) <= "111011";
-        color_pallet_regfile(15) <= "111111";
+        color_pallet_regfile(0) <=  "0000";
+        color_pallet_regfile(1) <=  "0010";
+        color_pallet_regfile(2) <=  "0100";
+        color_pallet_regfile(3) <=  "0110";
+        color_pallet_regfile(4) <=  "0001";
+        color_pallet_regfile(5) <=  "0011";
+        color_pallet_regfile(6) <=  "0101";
+        color_pallet_regfile(7) <=  "0111";
+        color_pallet_regfile(8) <=  "1000";
+        color_pallet_regfile(9) <=  "1010";
+        color_pallet_regfile(10) <= "1100";
+        color_pallet_regfile(11) <= "1110";
+        color_pallet_regfile(12) <= "1001";
+        color_pallet_regfile(13) <= "1011";
+        color_pallet_regfile(14) <= "1101";
+        color_pallet_regfile(15) <= "1111";
       else -- not reset
         -- every clock jobs
         data_buff_reg0 <= data_buff_regS;
@@ -357,7 +357,7 @@ begin
         if( hvblank = "11" )then
           rgb_reg <= color_pallet_regfile(cp_outaddr_reg);
         else
-          rgb_reg <= "000000";
+          rgb_reg <= "0000";
         end if;
 
       end if;
@@ -369,9 +369,9 @@ begin
 
   hvblank <= hblank & vblank;
 
-  r_out <= rgb_reg(5 downto 4);
-  g_out <= rgb_reg(3 downto 2);
-  b_out <= rgb_reg(1 downto 0);
+  r_out <= rgb_reg(3);
+  g_out <= rgb_reg(2 downto 1);
+  b_out <= rgb_reg(0);
 
   we_vram_out <= we_vram_reg or clk_in;
 
