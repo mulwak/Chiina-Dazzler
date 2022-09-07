@@ -277,19 +277,10 @@ begin
         end if;
 
         case state is
-          --when "00" =>
           when "00" | "01" =>
+              -- read
             addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
             oe_vram_out <= '0'; -- out enable
-          --when "01" =>
-          --  addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
-          --  oe_vram_out <= '0'; -- out enable
-          --when others =>
-          -- ???
-        --end case;
-
-        -- write
-        --case state is
           when "10" =>
               -- write 1
             addr_vram_out <= write_frame_reg & vram_writecursor_reg;
