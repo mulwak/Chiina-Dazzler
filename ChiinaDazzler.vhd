@@ -61,6 +61,10 @@ architecture RTL of ChiinaDazzler is
   signal  exstate : std_logic_vector(2 downto 0);
   signal  line_state_sig  : std_logic_vector(1 downto 0);
 
+  --internal signal keep for machxo2 bug
+  attribute syn_keep  : boolean;
+  attribute syn_keep of state:signal is true;
+
   --config signals
   signal  UPDOWN_sig, RCSEC_sig : std_logic;
   signal  cursor_config : std_logic_vector(1 downto 0);
