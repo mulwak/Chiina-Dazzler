@@ -62,8 +62,9 @@ architecture RTL of ChiinaDazzler is
   signal  line_state_sig  : std_logic_vector(1 downto 0);
 
   --internal signal keep for machxo2 bug
-  attribute syn_keep  : boolean;
-  attribute syn_keep of state:signal is true;
+  --attribute syn_keep  : boolean;
+  --attribute syn_keep of state:signal is true;
+  --attribute syn_keep of vram_scan_addr_sig:signal is true;
 
   --config signals
   signal  UPDOWN_sig, RCSEC_sig : std_logic;
@@ -276,15 +277,19 @@ begin
         end if;
 
         case state is
+          --when "00" =>
           when "00" | "01" =>
             addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
             oe_vram_out <= '0'; -- out enable
-          when others =>
+          --when "01" =>
+          --  addr_vram_out <= std_logic_vector(unsigned(vram_scan_addr_sig));
+          --  oe_vram_out <= '0'; -- out enable
+          --when others =>
           -- ???
-        end case;
+        --end case;
 
         -- write
-        case state is
+        --case state is
           when "10" =>
               -- write 1
             addr_vram_out <= write_frame_reg & vram_writecursor_reg;
