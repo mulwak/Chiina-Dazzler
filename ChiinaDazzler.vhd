@@ -113,11 +113,17 @@ architecture RTL of ChiinaDazzler is
 --+-----------------------------------------------------------
 -- VRAM reading address
   signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
-  signal  read_frame_bf_reg   : std_logic_vector(7 downto 0); -- setting buffer TODO:delete
-  signal  read_frame_L0_reg   : std_logic_vector(1 downto 0);
-  signal  read_frame_L1_reg   : std_logic_vector(1 downto 0);
-  signal  read_frame_L2_reg   : std_logic_vector(1 downto 0);
-  signal  read_frame_L3_reg   : std_logic_vector(1 downto 0);
+  signal  disp_frame_bf_reg   : std_logic_vector(7 downto 0); -- to suppress flicker
+  type disp_frame_for_lines_type is array (0 to 3) of std_logic_vector(1 downto 0);
+  signal  disp_frame_by_lines_reg   : disp_frame_for_lines_type; -- return frame by line
+
+--+-----------------------------------------------------------
+-- Frame-specific data
+  type frame_charbox_width_type is array (0 to 3) of integer range 0 to 127;
+  type frame_charbox_height_type is array (0 to 3) of integer range 0 to 255;
+  signal frame_charbox_width_regfile  : frame_charbox_width_type;
+  signal frame_charbox_height_regfile : frame_charbox_height_type;
+  signal frame_ttmode_flag_reg        : std_logic_vector(3 downto 0);
 
 --+-----------------------------------------------------------
 -- VRAM writing
@@ -128,26 +134,26 @@ architecture RTL of ChiinaDazzler is
   -- Address
   signal  vram_writecursor_reg  : std_logic_vector(14 downto 0);
   signal  write_frame_reg       : std_logic_vector(1 downto 0);
+  signal  write_frame_intc      : integer range 0 to 3;
   -- Data
   signal  WDBF_vreg             : std_logic_vector(7 downto 0);
   -- Countup control
-  signal  write_countup_flag    :std_logic;
-  signal  tw_mode_cursor_flag   :std_logic;
+  signal  write_countup_flag    : std_logic; -- old
+  signal  charbox_width_counter : integer range 0 to 127;
+  signal  charbox_heignt_counter: integer range 0 to 255;
 
 --+-----------------------------------------------------------
 -- 16 or 2 colors
-  signal  mode_flag_reg   : std_logic_vector(3 downto 0); -- mode settings
-  signal  mode_sig        : std_logic;                    -- current mode
+  signal  mode_sig            : std_logic;                    -- current mode
+  signal  line_width_sig      : integer range 0 to 256;
 --+-----------------------------------------------------------
 -- 2 colors
-  signal  tw_shift_reg    : std_logic_vector(6 downto 0); -- shift register
-  signal  tw_color_0_reg  : std_logic_vector(3 downto 0);
-  signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
+  signal  tt_shift_reg    : std_logic_vector(6 downto 0); -- shift register
+  signal  tt_color_0_reg  : std_logic_vector(3 downto 0);
+  signal  tt_color_1_reg  : std_logic_vector(3 downto 0);
 
 --+-----------------------------------------------------------
 -- 4bit data -> RGB121 color pallet
-  type regfile_type is array (0 to 15) of std_logic_vector(3 downto 0);
-  signal color_pallet_regfile   : regfile_type;
   signal cp_outaddr_reg         : integer range 0 to 15;  -- index
 
 begin
@@ -176,26 +182,29 @@ begin
   line_state_sig  <= vaddr_vec(1 downto 0);
 
 --+-----------------------------------------------------------
+-- Cast signals
+  write_frame_intc <= to_integer(unsigned(write_frame_reg));
+
+--+-----------------------------------------------------------
 -- Color mode of current line
-  with line_state_sig select
-    mode_sig <= mode_flag_reg(3) when "00",
-                mode_flag_reg(2) when "01",
-                mode_flag_reg(1) when "10",
-                mode_flag_reg(0) when others;
+  mode_sig <= frame_ttmode_flag_reg(to_integer(unsigned(disp_frame_by_lines_reg(to_integer(unsigned(line_state_sig))))));
 
 --+-----------------------------------------------------------
 -- VRAM scan address
   -- Which frame buffer?
-  with line_state_sig select
-    vram_scan_addr_sig(16 downto 15) <= read_frame_L0_reg when "00",
-                                        read_frame_L1_reg when "01",
-                                        read_frame_L2_reg when "10",
-                                        read_frame_L3_reg when others;
+  vram_scan_addr_sig(16 downto 15) <= disp_frame_by_lines_reg(to_integer(unsigned(line_state_sig)));
+
   -- Where in the buffer?
   with mode_sig select
     vram_scan_addr_sig(14 downto 0) <=
-      vaddr_vec(9 downto 2)&haddr_vec(7 downto 2)&haddr_vec(0) when '0',
-      "00"&vaddr_vec(9 downto 2)&haddr_vec(7 downto 3) when others;
+      vaddr_vec(9 downto 2)&haddr_vec(7 downto 2)&haddr_vec(0)  when '0',
+      "00"&vaddr_vec(9 downto 2)&haddr_vec(7 downto 3)          when others;
+
+--+-----------------------------------------------------------
+-- Screen logical width for color mode
+  with mode_sig select
+    line_width_sig <= 128 when '0',
+                      32  when others;
 
 --======================================================================
 --                         Receive MPU data
@@ -238,33 +247,10 @@ begin
 --                              Reset
 --======================================================================
       if(reset_in = '0')then
-        --WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
         cmd_flag_reg1 <= '0';
         cmd_flag_reg2 <= '0';
-        --data_buff_reg1 <= "00000000";
-        --addr_buff_reg1 <= "000";
-        --lut_que_reg0 <= "0000";
-        --lut_que_reg1 <= "0000";
-        --lut_que_reg2 <= "0000";
-        --vram_writecursor_reg <= "00000000000000000";
         nedge_write_flag_reg <= '0';
-        color_pallet_regfile(0) <=  "0000";
-        color_pallet_regfile(1) <=  "0010";
-        color_pallet_regfile(2) <=  "0100";
-        color_pallet_regfile(3) <=  "0110";
-        color_pallet_regfile(4) <=  "0001";
-        color_pallet_regfile(5) <=  "0011";
-        color_pallet_regfile(6) <=  "0101";
-        color_pallet_regfile(7) <=  "0111";
-        color_pallet_regfile(8) <=  "1000";
-        color_pallet_regfile(9) <=  "1010";
-        color_pallet_regfile(10) <= "1100";
-        color_pallet_regfile(11) <= "1110";
-        color_pallet_regfile(12) <= "1001";
-        color_pallet_regfile(13) <= "1011";
-        color_pallet_regfile(14) <= "1101";
-        color_pallet_regfile(15) <= "1111";
 --======================================================================
 --                           Every clock
 --======================================================================
@@ -286,22 +272,36 @@ begin
         if(cmd_flag_reg2 = '1')then
           cmd_flag_reg2 <= '0';
           case addr_buff_reg1 is
-            -- CMD
+--+-----------------------------------------------------------
+-- REP: REPeat
             when "000" =>
-              --case data_buff_reg1 is
-                -- cursor reset commandis
-                --when "00000000" =>
-                  --vram_writecursor_reg <= "000000000000000";
-                --when others =>
-              --end case;
-            -- CFG
+              write_flag_reg <= '1';
+--+-----------------------------------------------------------
+-- CFG: ConFiG
             when "001" =>
-              mode_flag_reg <= data_buff_reg1(7 downto 4);
-              tw_mode_cursor_flag <= data_buff_reg1(1);
-              write_countup_flag <= data_buff_reg1(0);
-            -- VMAH
+              --   +-----------------+
+              --   |  Command  Data  |
+              -- +-+--------+--------+-+
+              -- |7|  addr  |  data  |0|
+              -- +-+--------+--------+-+
+              case data_buff_reg1(7 downto 4) is
+                when "0000" =>  -- write-frame 2bit
+                  write_frame_reg <= data_buff_reg1(1 downto 0);
+                when "0001" =>  -- frame-ttmode 1bit
+                  frame_ttmode_flag_reg(write_frame_intc) <= data_buff_reg1(0);
+                when "0010" =>
+                  tt_color_0_reg <= data_buff_reg1(3 downto 0);
+                when "0011" =>
+                  tt_color_1_reg <= data_buff_reg1(3 downto 0);
+                when others =>
+              end case;
+--+-----------------------------------------------------------
+-- VMAH: VraM Adress Horizonal
             when "010" =>
-              case tw_mode_cursor_flag is
+              -- reset counter
+              charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
+              charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+              case frame_ttmode_flag_reg(write_frame_intc) is
                 when '0' =>
                   vram_writecursor_reg(6 downto 0) <=
                                       data_buff_reg1(6 downto 0);
@@ -309,28 +309,37 @@ begin
                   vram_writecursor_reg(4 downto 0) <=
                                       data_buff_reg1(4 downto 0);
               end case;
-            --VMAV
+--+-----------------------------------------------------------
+-- VMAV: VraM Adress Vertical
             when "011" =>
-              case tw_mode_cursor_flag is
+              -- reset counter
+              charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
+              charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+              case frame_ttmode_flag_reg(write_frame_intc) is
                 when '0' =>
                   vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
                 when others =>
                   vram_writecursor_reg(14 downto 5) <= "00"&data_buff_reg1;
               end case;
-            -- WDBF
+--+-----------------------------------------------------------
+-- WDBF: Write Data BuFfer
             when "100" =>
               WDBF_vreg <= data_buff_reg1;
               write_flag_reg <= '1';
-            -- RF
+--+-----------------------------------------------------------
+-- DISP: DISPlay frame
             when "101" =>
-              read_frame_bf_reg <= data_buff_reg1;
-            -- WF
+              disp_frame_bf_reg <= data_buff_reg1;
+--+-----------------------------------------------------------
+-- CHARW: CHARbox Width
             when "110" =>
-              write_frame_reg <= data_buff_reg1(1 downto 0);
-            -- TCP
+              frame_charbox_width_regfile(write_frame_intc)
+                <= to_integer(unsigned(data_buff_reg1));
+--+-----------------------------------------------------------
+-- CHARH: CHARbox Height
             when "111" =>
-              tw_color_0_reg <= data_buff_reg1(7 downto 4);
-              tw_color_1_reg <= data_buff_reg1(3 downto 0);
+              frame_charbox_height_regfile(write_frame_intc)
+                <= to_integer(unsigned(data_buff_reg1(6 downto 0)));
             when others =>
           end case;
         end if;
@@ -359,10 +368,22 @@ begin
               --write 2
             nedge_write_flag_reg <= '0';
 
-            if(nedge_write_flag_reg = '1' and
-                  write_countup_flag = '1')then
-              vram_writecursor_reg <=
-                 std_logic_vector(unsigned(vram_writecursor_reg)+1);
+--+-----------------------------------------------------------
+-- Count-Up
+            if(nedge_write_flag_reg = '1' and write_countup_flag = '1')then
+              if(charbox_width_counter = 1)then -- over rignt
+                if(charbox_heignt_counter = 1)then -- over bottom
+                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
+                                          -(line_width_sig*frame_charbox_width_regfile(write_frame_intc))
+                                        );
+                else -- over rignt but bottom
+                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
+                                          +line_width_sig
+                                          -frame_charbox_width_regfile(write_frame_intc)+1
+                                        );
+                end if;
+              end if;
+                vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
            end if;
           when others =>
         end case;
@@ -394,20 +415,20 @@ begin
         else  -- 2 colors mode
           case exstate is
             when "001" =>
-              tw_shift_reg <= data_vram_io(6 downto 0);
+              tt_shift_reg <= data_vram_io(6 downto 0);
               case data_vram_io(7) is
                 when '0'|'L' =>
-                  cp_outaddr_reg <= to_integer(unsigned(tw_color_0_reg));
+                  cp_outaddr_reg <= to_integer(unsigned(tt_color_0_reg));
                 when others =>
-                  cp_outaddr_reg <= to_integer(unsigned(tw_color_1_reg));
+                  cp_outaddr_reg <= to_integer(unsigned(tt_color_1_reg));
               end case;
             when others =>
-              tw_shift_reg <= tw_shift_reg(5 downto 0) & 'X';
-              case tw_shift_reg(6) is
+              tt_shift_reg <= tt_shift_reg(5 downto 0) & 'X';
+              case tt_shift_reg(6) is
                 when '0'|'L' =>
-                  cp_outaddr_reg <= to_integer(unsigned(tw_color_0_reg));
+                  cp_outaddr_reg <= to_integer(unsigned(tt_color_0_reg));
                 when others =>
-                  cp_outaddr_reg <= to_integer(unsigned(tw_color_1_reg));
+                  cp_outaddr_reg <= to_integer(unsigned(tt_color_1_reg));
               end case;
           end case;
         end if;
@@ -417,17 +438,35 @@ begin
 --  While suppressing flicker
         case vblank is
           when '0' =>
-            read_frame_L0_reg <= read_frame_bf_reg(7 downto 6);
-            read_frame_L1_reg <= read_frame_bf_reg(5 downto 4);
-            read_frame_L2_reg <= read_frame_bf_reg(3 downto 2);
-            read_frame_L3_reg <= read_frame_bf_reg(1 downto 0);
+            disp_frame_by_lines_reg(0) <= disp_frame_bf_reg(7 downto 6);
+            disp_frame_by_lines_reg(1) <= disp_frame_bf_reg(5 downto 4);
+            disp_frame_by_lines_reg(2) <= disp_frame_bf_reg(3 downto 2);
+            disp_frame_by_lines_reg(3) <= disp_frame_bf_reg(1 downto 0);
           when others =>
         end case;
 
 --+-----------------------------------------------------------
 -- Reflect in the output except for the blank
         if( hvblank = "11" )then
-          rgb_reg <= color_pallet_regfile(cp_outaddr_reg);
+          case cp_outaddr_reg is
+            when 0  => rgb_reg <= "0000";
+            when 1  => rgb_reg <= "0010";
+            when 2  => rgb_reg <= "0100";
+            when 3  => rgb_reg <= "0110";
+            when 4  => rgb_reg <= "0001";
+            when 5  => rgb_reg <= "0011";
+            when 6  => rgb_reg <= "0101";
+            when 7  => rgb_reg <= "0111";
+            when 8  => rgb_reg <= "1000";
+            when 9  => rgb_reg <= "1010";
+            when 10 => rgb_reg <= "1100";
+            when 11 => rgb_reg <= "1110";
+            when 12 => rgb_reg <= "1001";
+            when 13 => rgb_reg <= "1011";
+            when 14 => rgb_reg <= "1101";
+            when 15 => rgb_reg <= "1111";
+            when others =>
+          end case;
         else
           rgb_reg <= "0000";
         end if;
