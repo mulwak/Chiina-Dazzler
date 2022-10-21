@@ -1,10 +1,19 @@
--- Copyright 2021, 2022 @ponzu840w GPLv3.0
--- 6502 Graphics Board @MAX-V CPLD
+--======================================================================
+--======================================================================
+--                          Chiina-Dazzler
+--                  6502 Video Card @MarchXO2 FPGA
+--======================================================================
 -- This VHDL source is the top level module.
+-- Copyright 2021, 2022 @ponzu840w GPLv3.0
+--======================================================================
+--======================================================================
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+--======================================================================
+-- I/O definition
+--======================================================================
 entity ChiinaDazzler is
   port
   (
@@ -33,6 +42,9 @@ end ChiinaDazzler;
 
 architecture RTL of ChiinaDazzler is
 
+--======================================================================
+-- Video timing counter compornent
+--======================================================================
   component VideoTimingGen
     port(
           clk_in : in std_logic;
@@ -46,77 +58,102 @@ architecture RTL of ChiinaDazzler is
         );
   end component;
 
-  --crtc signals
+--======================================================================
+-- Registers and signals
+--======================================================================
+--+-----------------------------------------------------------
+-- Video timing signals
   signal  hblank, vblank, hsync, vsync  :  std_logic;
   signal  haddr  : integer range 0 to 511;
   signal  vaddr  : integer range 0 to 1023;
 
-  --tmp signals
+--+-----------------------------------------------------------
+-- Video timing signals
   signal haddr_vec  : std_logic_vector(8 downto 0);
   signal vaddr_vec  : std_logic_vector(9 downto 0);
-  signal hvblank : std_logic_vector(1 downto 0);
+  signal hvblank    : std_logic_vector(1 downto 0);
 
-  signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
-  signal  state : std_logic_vector(1 downto 0);
-  signal  exstate : std_logic_vector(2 downto 0);
+--+-----------------------------------------------------------
+-- Convinient aliases of video timing signals
+  signal  state           : std_logic_vector(1 downto 0);
+  signal  exstate         : std_logic_vector(2 downto 0);
   signal  line_state_sig  : std_logic_vector(1 downto 0);
 
-  --internal signal keep for machxo2 bug
-  --attribute syn_keep  : boolean;
-  --attribute syn_keep of state:signal is true;
-  --attribute syn_keep of vram_scan_addr_sig:signal is true;
-
-  --config signals
-  signal  UPDOWN_sig, RCSEC_sig : std_logic;
-  signal  cursor_config : std_logic_vector(1 downto 0);
-
-  --regs
-  signal  data_buff_regS : std_logic_vector(7 downto 0); -- mpu strb
-  signal  data_buff_reg0 : std_logic_vector(7 downto 0); -- mpu strb
-  signal  data_buff_reg1 : std_logic_vector(7 downto 0); -- CPLD clk
-  signal  addr_buff_regS : std_logic_vector(2 downto 0);
-  signal  addr_buff_reg0 : std_logic_vector(2 downto 0);
-  signal  addr_buff_reg1 : std_logic_vector(2 downto 0);
-  signal  cmd_flag_regS : std_logic;
-  signal  cmd_flag_reg0 : std_logic;
+--+-----------------------------------------------------------
+-- Input buffer registors
+--    +---------+-------------------------------------+
+--    |data flow| [6502] -> #regS -> #reg0 -> #reg1   |
+--    +---------+--------------------------+----------+
+--    |sensitive|          6502 strb       | CPLD clk |
+--    +---------+--------------------------+----------+
+  -- 3bit Address
+  signal  addr_buff_regS : std_logic_vector(2 downto 0); -- MPU strb
+  signal  addr_buff_reg0 : std_logic_vector(2 downto 0); -- MPU strb
+  signal  addr_buff_reg1 : std_logic_vector(2 downto 0); -- CPLD clk
+  -- 8bit Data
+  signal  data_buff_regs : std_logic_vector(7 downto 0);
+  signal  data_buff_reg0 : std_logic_vector(7 downto 0);
+  signal  data_buff_reg1 : std_logic_vector(7 downto 0);
+  -- 1bit Command Flag
+  signal  cmd_flag_regS : std_logic;  -- Value change (0->1, 1->0) is the signal,
+  signal  cmd_flag_reg0 : std_logic;  --        means the existence of a command.
   signal  cmd_flag_reg1 : std_logic;
-  signal  cmd_flag_reg2 : std_logic;
+  signal  cmd_flag_reg2 : std_logic;  -- (reg1 != reg2) => cmd!
 
-  signal  write_flag_reg  : std_logic;
+--+-----------------------------------------------------------
+-- VRAM to VGA pipe
+--    +------+----------------------------------------------------+-----+
+--    | VRAM | -> lut_que -> [color_pallet_regfile] -> rgb_reg -> | VGA |
+--    +------+----------------------------------------------------+-----+
+  signal  lut_que_reg0  : std_logic_vector(3 downto 0);
+  signal  lut_que_reg1  : std_logic_vector(3 downto 0);
+  signal  lut_que_reg2  : std_logic_vector(3 downto 0);
+  signal  rgb_reg       : std_logic_vector(3 downto 0);
+
+--+-----------------------------------------------------------
+-- VRAM reading address
+  signal  vram_scan_addr_sig  : std_logic_vector(16 downto 0);
+  signal  read_frame_bf_reg   : std_logic_vector(7 downto 0); -- setting buffer TODO:delete
+  signal  read_frame_L0_reg   : std_logic_vector(1 downto 0);
+  signal  read_frame_L1_reg   : std_logic_vector(1 downto 0);
+  signal  read_frame_L2_reg   : std_logic_vector(1 downto 0);
+  signal  read_frame_L3_reg   : std_logic_vector(1 downto 0);
+
+--+-----------------------------------------------------------
+-- VRAM writing
+  -- Sequencing control
+  signal  write_flag_reg        : std_logic;
   signal  nedge_write_flag_reg  : std_logic;
+  signal  we_vram_reg           : std_logic;
+  -- Address
+  signal  vram_writecursor_reg  : std_logic_vector(14 downto 0);
+  signal  write_frame_reg       : std_logic_vector(1 downto 0);
+  -- Data
+  signal  WDBF_vreg             : std_logic_vector(7 downto 0);
+  -- Countup control
+  signal  write_countup_flag    :std_logic;
+  signal  tw_mode_cursor_flag   :std_logic;
 
-  signal  lut_que_reg0 : std_logic_vector(3 downto 0);
-  signal  lut_que_reg1 : std_logic_vector(3 downto 0);
-  signal  lut_que_reg2 : std_logic_vector(3 downto 0);
-  signal  read_frame_L0_reg  : std_logic_vector(1 downto 0);
-  signal  read_frame_L1_reg  : std_logic_vector(1 downto 0);
-  signal  read_frame_L2_reg  : std_logic_vector(1 downto 0);
-  signal  read_frame_L3_reg  : std_logic_vector(1 downto 0);
-  signal  read_frame_bf_reg  : std_logic_vector(7 downto 0);
-  signal  write_frame_reg  : std_logic_vector(1 downto 0);
-  signal  vram_writecursor_reg : std_logic_vector(14 downto 0);
-  signal  write_countup_flag :std_logic;
-  signal  tw_mode_cursor_flag :std_logic;
-
-  signal  tw_shift_reg  : std_logic_vector(6 downto 0);
-  signal  mode_flag_reg : std_logic_vector(3 downto 0);
-  signal  mode_sig  : std_logic;
-
-  type regfile_type is array (0 to 15) of std_logic_vector(3 downto 0);
-  signal color_pallet_regfile  : regfile_type;
-  signal cp_outaddr_reg  : integer range 0 to 15;
-
-  signal  we_vram_reg : std_logic;
-
-  --regs (visible
-  signal  WDBF_vreg : std_logic_vector(7 downto 0);
-
+--+-----------------------------------------------------------
+-- 16 or 2 colors
+  signal  mode_flag_reg   : std_logic_vector(3 downto 0); -- mode settings
+  signal  mode_sig        : std_logic;                    -- current mode
+--+-----------------------------------------------------------
+-- 2 colors
+  signal  tw_shift_reg    : std_logic_vector(6 downto 0); -- shift register
   signal  tw_color_0_reg  : std_logic_vector(3 downto 0);
   signal  tw_color_1_reg  : std_logic_vector(3 downto 0);
 
-  signal rgb_reg  : std_logic_vector(3 downto 0);
+--+-----------------------------------------------------------
+-- 4bit data -> RGB121 color pallet
+  type regfile_type is array (0 to 15) of std_logic_vector(3 downto 0);
+  signal color_pallet_regfile   : regfile_type;
+  signal cp_outaddr_reg         : integer range 0 to 15;  -- index
 
 begin
+--======================================================================
+--                        Signal definition
+--======================================================================
   U01 : VideoTimingGen
   port map(clk_in => clk_in,
            reset_in => reset_in,
@@ -128,30 +165,42 @@ begin
            v_addr_out => vaddr
          );
 
+--+-----------------------------------------------------------
+-- Video timings -> state
+  -- Count by integer and separate by vector
   haddr_vec <= std_logic_vector(to_unsigned(haddr, haddr_vec'length));
   vaddr_vec <= std_logic_vector(to_unsigned(vaddr, vaddr_vec'length));
-  state <= haddr_vec(1 downto 0);
-  exstate <= haddr_vec(2 downto 0);
-  line_state_sig <= vaddr_vec(1 downto 0);
+  -- State
+  state           <= haddr_vec(1 downto 0); -- state for 16 colors mode
+  exstate         <= haddr_vec(2 downto 0); -- state for 2 colors mode
+  line_state_sig  <= vaddr_vec(1 downto 0);
 
+--+-----------------------------------------------------------
+-- Color mode of current line
   with line_state_sig select
     mode_sig <= mode_flag_reg(3) when "00",
                 mode_flag_reg(2) when "01",
                 mode_flag_reg(1) when "10",
                 mode_flag_reg(0) when others;
 
+--+-----------------------------------------------------------
+-- VRAM scan address
+  -- Which frame buffer?
   with line_state_sig select
     vram_scan_addr_sig(16 downto 15) <= read_frame_L0_reg when "00",
                                         read_frame_L1_reg when "01",
                                         read_frame_L2_reg when "10",
                                         read_frame_L3_reg when others;
+  -- Where in the buffer?
   with mode_sig select
     vram_scan_addr_sig(14 downto 0) <=
       vaddr_vec(9 downto 2)&haddr_vec(7 downto 2)&haddr_vec(0) when '0',
       "00"&vaddr_vec(9 downto 2)&haddr_vec(7 downto 3) when others;
 
-  -- input mpu data
-  process(strb_mpu_in,cs_mpu_in,reset_in)
+--======================================================================
+--                         Receive MPU data
+--======================================================================
+  process(strb_mpu_in,cs_mpu_in,reset_in) -- MPU timing!
   begin
     if(reset_in = '0')then -- async reset
       cmd_flag_regS <= '0';
@@ -167,15 +216,17 @@ begin
   process(clk_in)
   begin
 
-    -- negative edge
+--======================================================================
+--                    Negative edge VRAM writing
+--======================================================================
     if(clk_in'event and clk_in = '0')then
       if(reset_in = '0')then
       else
         if(nedge_write_flag_reg = '1')then
-          data_vram_io <= WDBF_vreg;
+          data_vram_io <= WDBF_vreg;    -- Write
           we_vram_reg <= '0';
         else
-          data_vram_io <= "ZZZZZZZZ";
+          data_vram_io <= "ZZZZZZZZ";   -- Don't write anything
           we_vram_reg <= '1';
         end if;
       end if;
@@ -183,6 +234,9 @@ begin
 
     -- positive edge
     if(clk_in'event and clk_in = '1')then
+--======================================================================
+--                              Reset
+--======================================================================
       if(reset_in = '0')then
         --WDBF_vreg  <= "00000000";
         write_flag_reg <= '0';
@@ -211,6 +265,9 @@ begin
         color_pallet_regfile(13) <= "1011";
         color_pallet_regfile(14) <= "1101";
         color_pallet_regfile(15) <= "1111";
+--======================================================================
+--                           Every clock
+--======================================================================
       else -- not reset
         -- every clock jobs
         data_buff_reg0 <= data_buff_regS;
@@ -223,7 +280,9 @@ begin
           cmd_flag_reg2 <= '1';
         end if;
 
-        -- command processing
+--======================================================================
+--                      MPU Command Processing
+--======================================================================
         if(cmd_flag_reg2 = '1')then
           cmd_flag_reg2 <= '0';
           case addr_buff_reg1 is
@@ -276,6 +335,11 @@ begin
           end case;
         end if;
 
+--======================================================================
+--                        Data flow by state
+--======================================================================
+--+-----------------------------------------------------------
+-- 4 cycle states independent of color mode
         case state is
           when "00" | "01" =>
               -- read
@@ -303,6 +367,8 @@ begin
           when others =>
         end case;
 
+--+-----------------------------------------------------------
+-- 4 cycle states of 16 color mode
         -- read and output
         if( mode_sig = '0' )then  -- 16 colors mode
           case state is
@@ -323,6 +389,8 @@ begin
               cp_outaddr_reg <= to_integer(unsigned(lut_que_reg2));
             when others =>
           end case;
+--+-----------------------------------------------------------
+-- 8 cycle states of 2 color mode
         else  -- 2 colors mode
           case exstate is
             when "001" =>
@@ -344,7 +412,9 @@ begin
           end case;
         end if;
 
-        -- output flame change without chiratsuki.
+--+-----------------------------------------------------------
+-- Switch display frame in vblank
+--  While suppressing flicker
         case vblank is
           when '0' =>
             read_frame_L0_reg <= read_frame_bf_reg(7 downto 6);
@@ -354,6 +424,8 @@ begin
           when others =>
         end case;
 
+--+-----------------------------------------------------------
+-- Reflect in the output except for the blank
         if( hvblank = "11" )then
           rgb_reg <= color_pallet_regfile(cp_outaddr_reg);
         else
