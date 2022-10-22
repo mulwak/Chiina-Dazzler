@@ -11,7 +11,7 @@ entity VideoTimingGen is
   port(
   clk_in, reset_in  : in std_logic;
   h_blank_out, v_blank_out, h_sync_out, v_sync_out  : out std_logic; -- negative logic
-  h_earlyblank_out, v_earlyblank_out  : out std_logic;
+  --h_earlyblank_out, v_earlyblank_out  : out std_logic;
   h_addr_out  : out integer range 0 to 511;
   v_addr_out  : out integer range 0 to 1023
 );
@@ -41,8 +41,8 @@ begin
   v_addr_out <= v_cnt_reg;
   h_blank_out <= h_blank_delayreg0;
   v_blank_out <= v_blank_delayreg0;
-  h_earlyblank_out <= h_eblank_reg;
-  v_earlyblank_out <= v_eblank_reg;
+  --h_earlyblank_out <= h_eblank_reg;
+  --v_earlyblank_out <= v_eblank_reg;
   h_eblank_reg <= '0' when
                   H_VALID-1 < h_cnt_reg  else
                   '1';
