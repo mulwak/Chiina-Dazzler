@@ -371,19 +371,31 @@ begin
 --+-----------------------------------------------------------
 -- Count-Up
             if(nedge_write_flag_reg = '1' and write_countup_flag = '1')then
-              if(charbox_width_counter = 1)then -- over rignt
-                if(charbox_heignt_counter = 1)then -- over bottom
+              --+-----------------------------------------------------------
+              -- Over Right
+              if(charbox_width_counter = 1)then
+                charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);        -- width counter reset
+                --+-----------------------------------------------------------
+                -- Over Bottom-Right
+                if(charbox_heignt_counter = 1)then  -- over bottom-right
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
-                                          -(line_width_sig*frame_charbox_width_regfile(write_frame_intc))
-                                        );
-                else -- over rignt but bottom
+                                          +1                                                                -- next
+                                          -(line_width_sig*frame_charbox_width_regfile(write_frame_intc))); -- rising
+                  charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+                --+-----------------------------------------------------------
+                -- Over Right but Bottom
+                else                                -- over rignt but bottom
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
-                                          +line_width_sig
-                                          -frame_charbox_width_regfile(write_frame_intc)+1
-                                        );
-                end if;
-              end if;
+                                          +line_width_sig                                                   -- LF
+                                          -frame_charbox_width_regfile(write_frame_intc)+1);                -- CR
+                  charbox_heignt_counter <= charbox_heignt_counter-1;
+                end if; -- /bottom right
+              --+-----------------------------------------------------------
+              -- No Over
+              else
                 vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
+                charbox_width_counter <= charbox_width_counter-1;
+              end if;   -- /right
            end if;
           when others =>
         end case;
