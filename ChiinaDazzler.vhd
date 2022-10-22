@@ -138,7 +138,7 @@ architecture RTL of ChiinaDazzler is
   -- Data
   signal  WDBF_vreg             : std_logic_vector(7 downto 0);
   -- Countup control
-  signal  write_countup_flag    : std_logic; -- old
+  signal  charbox_enable_sig    : std_logic;
   signal  charbox_width_counter : integer range 0 to 127;
   signal  charbox_heignt_counter: integer range 0 to 255;
 
@@ -205,6 +205,10 @@ begin
   with mode_sig select
     line_width_sig <= 128 when '0',
                       32  when others;
+
+  with frame_charbox_width_regfile(write_frame_intc) select
+    charbox_enable_sig <= '0' when 0,
+                          '1' when others;
 
 --======================================================================
 --                         Receive MPU data
@@ -273,11 +277,11 @@ begin
           cmd_flag_reg2 <= '0';
           case addr_buff_reg1 is
 --+-----------------------------------------------------------
--- REP: REPeat
+-- REPT: REPeat
             when "000" =>
               write_flag_reg <= '1';
 --+-----------------------------------------------------------
--- CFG: ConFiG
+-- CONF: ConFiG
             when "001" =>
               --   +-----------------+
               --   |  Command  Data  |
@@ -285,18 +289,18 @@ begin
               -- |7|  addr  |  data  |0|
               -- +-+--------+--------+-+
               case data_buff_reg1(7 downto 4) is
-                when "0000" =>  -- write-frame 2bit
+                when "0000" =>  -- WF write-frame 2bit
                   write_frame_reg <= data_buff_reg1(1 downto 0);
-                when "0001" =>  -- frame-ttmode 1bit
+                when "0001" =>  -- TT frame-ttmode 1bit
                   frame_ttmode_flag_reg(write_frame_intc) <= data_buff_reg1(0);
-                when "0010" =>
+                when "0010" =>  -- T0
                   tt_color_0_reg <= data_buff_reg1(3 downto 0);
-                when "0011" =>
+                when "0011" =>  -- T1
                   tt_color_1_reg <= data_buff_reg1(3 downto 0);
                 when others =>
               end case;
 --+-----------------------------------------------------------
--- VMAH: VraM Adress Horizonal
+-- PTRX: VraM Adress Horizonal
             when "010" =>
               -- reset counter
               charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
@@ -310,7 +314,7 @@ begin
                                       data_buff_reg1(4 downto 0);
               end case;
 --+-----------------------------------------------------------
--- VMAV: VraM Adress Vertical
+-- PTRY: VraM Adress Vertical
             when "011" =>
               -- reset counter
               charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
@@ -322,7 +326,7 @@ begin
                   vram_writecursor_reg(14 downto 5) <= "00"&data_buff_reg1;
               end case;
 --+-----------------------------------------------------------
--- WDBF: Write Data BuFfer
+-- WDAT: Write Data BuFfer
             when "100" =>
               WDBF_vreg <= data_buff_reg1;
               write_flag_reg <= '1';
@@ -331,15 +335,15 @@ begin
             when "101" =>
               disp_frame_bf_reg <= data_buff_reg1;
 --+-----------------------------------------------------------
--- CHARW: CHARbox Width
+-- CHRW: CHARbox Width
             when "110" =>
               frame_charbox_width_regfile(write_frame_intc)
                 <= to_integer(unsigned(data_buff_reg1));
 --+-----------------------------------------------------------
--- CHARH: CHARbox Height
+-- CHRH: CHARbox Height
             when "111" =>
               frame_charbox_height_regfile(write_frame_intc)
-                <= to_integer(unsigned(data_buff_reg1(6 downto 0)));
+                <= to_integer(unsigned(data_buff_reg1));
             when others =>
           end case;
         end if;
@@ -370,7 +374,7 @@ begin
 
 --+-----------------------------------------------------------
 -- Count-Up
-            if(nedge_write_flag_reg = '1' and write_countup_flag = '1')then
+            if(nedge_write_flag_reg = '1' and charbox_enable_sig = '1')then
               --+-----------------------------------------------------------
               -- Over Right
               if(charbox_width_counter = 1)then
@@ -394,7 +398,9 @@ begin
               -- No Over
               else
                 vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-                charbox_width_counter <= charbox_width_counter-1;
+                if(charbox_width_counter<0)then
+                  charbox_width_counter <= charbox_width_counter-1;
+                end if;
               end if;   -- /right
            end if;
           when others =>
