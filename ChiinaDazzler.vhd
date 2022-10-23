@@ -262,21 +262,21 @@ begin
 --======================================================================
       else -- not reset
         -- every clock jobs
-        data_buff_reg0 <= data_buff_regS;
         addr_buff_reg0 <= addr_buff_regS;
-        cmd_flag_reg0 <= cmd_flag_regS;
-        data_buff_reg1 <= data_buff_reg0;
         addr_buff_reg1 <= addr_buff_reg0;
+        data_buff_reg0 <= data_buff_regS;
+        data_buff_reg1 <= data_buff_reg0;
+        cmd_flag_reg0 <= cmd_flag_regS;
         cmd_flag_reg1 <= cmd_flag_reg0;
-        if(cmd_flag_reg0 = not cmd_flag_reg1)then
-          cmd_flag_reg2 <= '1';
-        end if;
+        cmd_flag_reg2 <= cmd_flag_reg1;
+        --if(cmd_flag_reg0 = not cmd_flag_reg1)then
+        --  cmd_flag_reg2 <= not cmd_flag_reg2;
+        --end if;
 
 --======================================================================
 --                      MPU Command Processing
 --======================================================================
-        if(cmd_flag_reg2 = '1')then
-          cmd_flag_reg2 <= '0';
+        if(cmd_flag_reg2 = not cmd_flag_reg1)then
           case addr_buff_reg1 is
 --+-----------------------------------------------------------
 -- CONF: ConFiG
@@ -306,14 +306,15 @@ begin
             when "010" =>
               -- reset counter
               charbox_width_counter <= 0;
-              charbox_base_x <= std_logic_vector(to_unsigned(charbox_next_x,7));
+              charbox_height_counter <= 0;
+              --charbox_base_x <= std_logic_vector(to_unsigned(charbox_next_x,7));
+              charbox_base_x <= data_buff_reg1(6 downto 0);
               vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
 --+-----------------------------------------------------------
 -- PTRY: VraM Adress Vertical
             when "011" =>
               -- reset counter
-              charbox_height_counter <= 0;
-              charbox_top_y    <= data_buff_reg1(7 downto 0);
+              charbox_top_y    <= data_buff_reg1;
               vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
 --+-----------------------------------------------------------
 -- WDAT: Write Data BuFfer
@@ -367,7 +368,7 @@ begin
             if(nedge_write_flag_reg = '1')then
               --+-----------------------------------------------------------
               -- Over Right
-              if(charbox_width_counter = charbox_width_reg and charbox_disable_reg = '1')then
+              if(charbox_width_counter = charbox_width_reg and charbox_disable_reg = '0')then
                 charbox_width_counter <= 0;        -- width counter reset
                   --+-----------------------------------------------------------
                   -- Over Bottom-Right
