@@ -158,8 +158,6 @@ architecture RTL of ChiinaDazzler is
 -- 4bit data -> RGB121 color pallet
   signal cp_outaddr_reg         : integer range 0 to 15;  -- index
 
-  signal findaddr : std_logic;
-
 begin
 --======================================================================
 --                        Signal definition
@@ -184,10 +182,6 @@ begin
   state           <= haddr_vec(1 downto 0); -- state for 16 colors mode
   exstate         <= haddr_vec(2 downto 0); -- state for 2 colors mode
   line_state_sig  <= vaddr_vec(1 downto 0);
-
-  with addr_mpu_in select
-    findaddr <= '1' when "001",
-                '0' when others;
 
 --+-----------------------------------------------------------
 -- Cast signals
@@ -227,15 +221,13 @@ begin
     end if; -- end strb edge
   end process;
 
-  process(findaddr,reset_in) -- MPU timing!
+  process(cs_mpu_in,reset_in,addr_mpu_in) -- MPU timing!
   begin
     if(reset_in = '0')then -- async reset
         repeat_flag_regP <= '0';
-    elsif(cs_mpu_in = '0')then
-      if(findaddr'event and findaddr = '1')then
-        repeat_flag_regP <= not repeat_flag_regP;
-      end if; -- end strb edge
-    end if;
+    elsif(cs_mpu_in'event and cs_mpu_in = '0' and addr_mpu_in = "001")then
+      repeat_flag_regP <= not repeat_flag_regP;
+    end if; -- end strb edge
   end process;
 
   process(clk_in)
