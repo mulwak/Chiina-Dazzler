@@ -139,6 +139,7 @@ begin
     _cmd(PTRX,"00001000")
     T_MSG <= "PTRY=_16";
     _cmd(PTRY,"00010000")
+    T_ADDR <= REPT; wait for 10 ns;
 
     T_MSG <= "loop____";
     T_ADDR <= "100";

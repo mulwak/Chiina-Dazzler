@@ -139,7 +139,7 @@ architecture RTL of ChiinaDazzler is
   signal  WDBF_vreg             : std_logic_vector(7 downto 0);
   -- Countup control
   signal  charbox_disable_reg    : std_logic;
-  signal  charbox_width_counter : integer range 0 to 127;
+  signal  charbox_width_counter : integer range 0 to 255;
   signal  charbox_height_counter: integer range 0 to 255;
   signal  charbox_top_y    : std_logic_vector(7 downto 0);
   signal  charbox_next_x        : integer range 0 to 255;
@@ -216,7 +216,7 @@ begin
 --======================================================================
 --                         Receive MPU data
 --======================================================================
-  process(strb_mpu_in) -- MPU timing!
+  process(strb_mpu_in,reset_in,cs_mpu_in) -- MPU timing!
   begin
     if(reset_in = '0')then -- async reset
       cmd_flag_regS <= '0';
@@ -227,7 +227,7 @@ begin
     end if; -- end strb edge
   end process;
 
-  process(findaddr) -- MPU timing!
+  process(findaddr,reset_in) -- MPU timing!
   begin
     if(reset_in = '0')then -- async reset
         repeat_flag_regP <= '0';
