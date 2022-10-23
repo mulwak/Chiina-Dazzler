@@ -277,12 +277,8 @@ begin
           cmd_flag_reg2 <= '0';
           case addr_buff_reg1 is
 --+-----------------------------------------------------------
--- REPT: REPeat
-            when "000" =>
-              write_flag_reg <= '1';
---+-----------------------------------------------------------
 -- CONF: ConFiG
-            when "001" =>
+            when "000" =>
               --   +-----------------+
               --   |  Command  Data  |
               -- +-+--------+--------+-+
@@ -300,6 +296,10 @@ begin
                   tt_color_1_reg <= data_buff_reg1(3 downto 0);
                 when others =>
               end case;
+--+-----------------------------------------------------------
+-- REPT: REPeat
+            when "001" =>
+              write_flag_reg <= '1';
 --+-----------------------------------------------------------
 -- PTRX: VraM Adress Horizonal
             when "010" =>
@@ -365,7 +365,8 @@ begin
             if(nedge_write_flag_reg = '1')then
               --+-----------------------------------------------------------
               -- Over Right
-              if(charbox_width_counter = charbox_width_reg)then
+              if(charbox_width_counter = charbox_width_reg and charbox_enable_reg = '1')then
+              --if(charbox_width_counter = charbox_width_reg)then
                 if(charbox_enable_reg = '1')then
                   charbox_width_counter <= 0;        -- width counter reset
                 --+-----------------------------------------------------------

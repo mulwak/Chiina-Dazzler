@@ -48,8 +48,8 @@ architecture SIM of ChiinaDazzler_TB is
   );
   end component;
 
-  constant REPT : std_logic_vector := "000";
-  constant CONF : std_logic_vector := "001";
+  constant CONF : std_logic_vector := "000";
+  constant REPT : std_logic_vector := "001";
   constant PTRX : std_logic_vector := "010";
   constant PTRY : std_logic_vector := "011";
   constant WDAT : std_logic_vector := "100";
