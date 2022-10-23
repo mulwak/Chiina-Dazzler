@@ -127,8 +127,8 @@ architecture RTL of ChiinaDazzler is
   --signal frame_charbox_height_F2_reg  : integer range 0 to 255;
   --signal frame_charbox_width_F3_reg   : integer range 0 to 127;
   --signal frame_charbox_height_F3_reg  : integer range 0 to 255;
-  signal nowframe_charbox_width_sig   : integer range 0 to 127;
-  signal nowframe_charbox_height_sig  : integer range 0 to 255;
+  signal charbox_width_reg   : integer range 0 to 127;
+  signal charbox_height_reg  : integer range 0 to 255;
   signal frame_ttmode_flag_reg        : std_logic_vector(3 downto 0);
 
 --+-----------------------------------------------------------
@@ -209,30 +209,12 @@ begin
       vaddr_vec(9 downto 2)&"00"&haddr_vec(7 downto 3)          when others;
 
 --+-----------------------------------------------------------
--- Screen logical width for color mode
-  --TODO:sig?
-  --with mode_sig select
-  --  line_width_sig <= 128 when '0',
-  --                    32  when others;
-  --line_width <= 128;
-
-  with nowframe_charbox_width_sig select
+-- Write Mode Signal
+  with charbox_width_reg select
     charbox_enable_sig <= '0' when 0,
                           '1' when others;
 
   charbox_next_x <= to_integer(unsigned(vram_writecursor_reg(6 downto 0)))+1;
-
-  --with write_frame_intc select
-  --  nowframe_charbox_width_sig <= frame_charbox_width_F0_reg when 0,
-  --                            frame_charbox_width_F1_reg when 1,
-  --                            frame_charbox_width_F2_reg when 2,
-  --                            frame_charbox_width_F2_reg when others;
-
-  --with write_frame_intc select
-  --  nowframe_charbox_height_sig <= frame_charbox_height_F0_reg when 0,
-  --                            frame_charbox_height_F1_reg when 1,
-  --                            frame_charbox_height_F2_reg when 2,
-  --                            frame_charbox_height_F2_reg when others;
 
 --======================================================================
 --                         Receive MPU data
@@ -316,7 +298,8 @@ begin
                 when "0000" =>  -- WF write-frame 2bit
                   write_frame_reg <= data_buff_reg1(1 downto 0);
                 when "0001" =>  -- TT frame-ttmode 1bit
-                  frame_ttmode_flag_reg(write_frame_intc) <= data_buff_reg1(0);
+                  frame_ttmode_flag_reg(write_frame_intc) <= data_buff_reg1(0); -- 105%
+                  --frame_ttmode_flag_reg <= data_buff_reg1(3 downto 0);        -- 109%
                 when "0010" =>  -- T0
                   tt_color_0_reg <= data_buff_reg1(3 downto 0);
                 when "0011" =>  -- T1
@@ -327,30 +310,14 @@ begin
 -- PTRX: VraM Adress Horizonal
             when "010" =>
               -- reset counter
-              charbox_width_counter <= nowframe_charbox_width_sig;
-              --charbox_height_counter <= nowframe_charbox_height_sig;
-             -- case frame_ttmode_flag_reg(write_frame_intc) is
-             --   when '0' =>
-             --     vram_writecursor_reg(6 downto 0) <=
-             --                         data_buff_reg1(6 downto 0);
-             --   when others =>
-             --     vram_writecursor_reg(4 downto 0) <=
-             --                         data_buff_reg1(4 downto 0);
-             -- end case;
-            vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
+              charbox_width_counter <= charbox_width_reg;
+              vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
 --+-----------------------------------------------------------
 -- PTRY: VraM Adress Vertical
             when "011" =>
               -- reset counter
-              charbox_width_counter <= nowframe_charbox_width_sig;
+              charbox_height_counter <= charbox_height_reg;
               charbox_top_height    <= data_buff_reg1(7 downto 0);
-              charbox_height_counter <= nowframe_charbox_height_sig;
-              --case frame_ttmode_flag_reg(write_frame_intc) is
-              --  when '0' =>
-              --    vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
-              --  when others =>
-              --    vram_writecursor_reg(14 downto 5) <= data_buff_reg1&"00";
-              --end case;
               vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
 --+-----------------------------------------------------------
 -- WDAT: Write Data BuFfer
@@ -364,25 +331,11 @@ begin
 --+-----------------------------------------------------------
 -- CHRW: CHARbox Width
             when "110" =>
-              nowframe_charbox_width_sig <= to_integer(unsigned(data_buff_reg1));
-              --case write_frame_intc is
-              --  when 0 => frame_charbox_width_F0_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when 1 => frame_charbox_width_F1_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when 2 => frame_charbox_width_F2_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when others => frame_charbox_width_F3_reg <= to_integer(unsigned(data_buff_reg1));
-              --end case;
+              charbox_width_reg <= to_integer(unsigned(data_buff_reg1));
 --+-----------------------------------------------------------
 -- CHRH: CHARbox Height
             when "111" =>
-              --vram_writecursor_reg(14 downto 7) <= charbox_top_height;
-              --vram_writecursor_reg(6 downto 0) <= std_logic_vector(to_unsigned(charbox_next_x,7));
-              nowframe_charbox_height_sig <= to_integer(unsigned(data_buff_reg1));
-              --case write_frame_intc is
-              --  when 0 => frame_charbox_height_F0_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when 1 => frame_charbox_height_F1_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when 2 => frame_charbox_height_F2_reg <= to_integer(unsigned(data_buff_reg1));
-              --  when others => frame_charbox_height_F3_reg <= to_integer(unsigned(data_buff_reg1));
-              --end case;
+              charbox_height_reg <= to_integer(unsigned(data_buff_reg1));
             when others =>
           end case;
         end if;
@@ -417,23 +370,19 @@ begin
               --+-----------------------------------------------------------
               -- Over Right
               if(charbox_width_counter = 1)then
-                charbox_width_counter <= nowframe_charbox_width_sig;        -- width counter reset
+                charbox_width_counter <= charbox_width_reg;        -- width counter reset
                 --+-----------------------------------------------------------
                 -- Over Bottom-Right
                 if(charbox_height_counter = 1)then  -- over bottom-right
-                --  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
-                --                          +1                                                                -- next
-                --                          -(line_width_sig*nowframe_charbox_width_sig)); -- rising
                   vram_writecursor_reg(14 downto 7) <= charbox_top_height;
                   vram_writecursor_reg(6 downto 0) <= std_logic_vector(to_unsigned(charbox_next_x,7));
-                  charbox_height_counter <= nowframe_charbox_height_sig;
+                  charbox_height_counter <= charbox_height_reg;
                 --+-----------------------------------------------------------
                 -- Over Right but Bottom
                 else                                -- over rignt but bottom
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
-                                          --+line_width_sig                                                   -- LF
-                                          +129
-                                          -nowframe_charbox_width_sig);                                          -- CR
+                                          +129                                                          -- LF
+                                          -charbox_width_reg);                                          -- CR
                   charbox_height_counter <= charbox_height_counter-1;
                 end if; -- /bottom right
               --+-----------------------------------------------------------
