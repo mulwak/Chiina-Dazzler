@@ -127,6 +127,8 @@ architecture RTL of ChiinaDazzler is
 -- VRAM writing
   -- Sequencing control
   signal  write_flag_reg        : std_logic;
+  signal  repeat_flag_regP        : std_logic;
+  signal  repeat_flag_regS        : std_logic;
   signal  nedge_write_flag_reg  : std_logic;
   signal  we_vram_reg           : std_logic;
   -- Address
@@ -156,6 +158,8 @@ architecture RTL of ChiinaDazzler is
 -- 4bit data -> RGB121 color pallet
   signal cp_outaddr_reg         : integer range 0 to 15;  -- index
 
+  signal findaddr : std_logic;
+
 begin
 --======================================================================
 --                        Signal definition
@@ -180,6 +184,10 @@ begin
   state           <= haddr_vec(1 downto 0); -- state for 16 colors mode
   exstate         <= haddr_vec(2 downto 0); -- state for 2 colors mode
   line_state_sig  <= vaddr_vec(1 downto 0);
+
+  with addr_mpu_in select
+    findaddr <= '1' when "001",
+                '0' when others;
 
 --+-----------------------------------------------------------
 -- Cast signals
@@ -208,7 +216,7 @@ begin
 --======================================================================
 --                         Receive MPU data
 --======================================================================
-  process(strb_mpu_in,cs_mpu_in,reset_in) -- MPU timing!
+  process(strb_mpu_in) -- MPU timing!
   begin
     if(reset_in = '0')then -- async reset
       cmd_flag_regS <= '0';
@@ -219,6 +227,17 @@ begin
     end if; -- end strb edge
   end process;
 
+  process(findaddr) -- MPU timing!
+  begin
+    if(reset_in = '0')then -- async reset
+        repeat_flag_regP <= '0';
+    elsif(cs_mpu_in = '0')then
+      if(findaddr'event and findaddr = '1')then
+        repeat_flag_regP <= not repeat_flag_regP;
+      end if; -- end strb edge
+    end if;
+  end process;
+
   process(clk_in)
   begin
 
@@ -226,15 +245,12 @@ begin
 --                    Negative edge VRAM writing
 --======================================================================
     if(clk_in'event and clk_in = '0')then
-      if(reset_in = '0')then
+      if(nedge_write_flag_reg = '1')then
+        data_vram_io <= WDBF_vreg;    -- Write
+        we_vram_reg <= '0';
       else
-        if(nedge_write_flag_reg = '1')then
-          data_vram_io <= WDBF_vreg;    -- Write
-          we_vram_reg <= '0';
-        else
-          data_vram_io <= "ZZZZZZZZ";   -- Don't write anything
-          we_vram_reg <= '1';
-        end if;
+        data_vram_io <= "ZZZZZZZZ";   -- Don't write anything
+        we_vram_reg <= '1';
       end if;
     end if;
 
@@ -245,6 +261,7 @@ begin
 --======================================================================
       if(reset_in = '0')then
         write_flag_reg <= '0';
+        repeat_flag_regS <= '0';
         cmd_flag_reg1 <= '0';
         cmd_flag_reg2 <= '0';
         nedge_write_flag_reg <= '0';
@@ -292,7 +309,6 @@ begin
 --+-----------------------------------------------------------
 -- REPT: REPeat
             when "001" =>
-              write_flag_reg <= '1';
 --+-----------------------------------------------------------
 -- PTRX: VraM Adress Horizonal
             when "010" =>
@@ -343,9 +359,10 @@ begin
               -- write 1
             addr_vram_out <= write_frame_reg & vram_writecursor_reg;
 
-            if(write_flag_reg = '1')then
+            if(write_flag_reg = '1' or repeat_flag_regP = not repeat_flag_regS)then
               nedge_write_flag_reg <= '1';
               write_flag_reg <= '0';
+              repeat_flag_regS <= repeat_flag_regP;
             end if;
 
             oe_vram_out <= '1'; -- out disable
