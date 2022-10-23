@@ -129,16 +129,16 @@ begin
     _cfg(WF,"0001")
     T_MSG <= "setTTto0";
     _cfg(TT,"0000")
-    T_MSG <= "PTRX=__8";
-    _cmd(PTRX,"00001000")
-    T_MSG <= "PTRY=_16";
-    _cmd(PTRY,"00010000")
     T_MSG <= "DISP=__0";
     _cmd(DISP,"01010101")
     T_MSG <= "CHRW=__5";
     _cmd(CHRW,"00000101")
     T_MSG <= "CHRH=__9";
     _cmd(CHRH,"00001001")
+    T_MSG <= "PTRX=__8";
+    _cmd(PTRX,"00001000")
+    T_MSG <= "PTRY=_16";
+    _cmd(PTRY,"00010000")
 
     T_MSG <= "loop____";
     T_ADDR <= "100";
