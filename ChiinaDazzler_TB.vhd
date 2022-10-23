@@ -131,10 +131,10 @@ begin
     _cfg(TT,"0000")
     T_MSG <= "DISP=__0";
     _cmd(DISP,"01010101")
-    T_MSG <= "CHRW=__5";
-    _cmd(CHRW,"00000101")
-    T_MSG <= "CHRH=__9";
-    _cmd(CHRH,"00001001")
+    T_MSG <= "CHRW=__0";
+    _cmd(CHRW,"00000000")
+    T_MSG <= "CHRH=__0";
+    _cmd(CHRH,"00001000")
     T_MSG <= "PTRX=__8";
     _cmd(PTRX,"00001000")
     T_MSG <= "PTRY=_16";

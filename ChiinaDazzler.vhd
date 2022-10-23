@@ -119,14 +119,6 @@ architecture RTL of ChiinaDazzler is
 
 --+-----------------------------------------------------------
 -- Frame-specific data
-  --signal frame_charbox_width_F0_reg   : integer range 0 to 127;
-  --signal frame_charbox_height_F0_reg  : integer range 0 to 255;
-  --signal frame_charbox_width_F1_reg   : integer range 0 to 127;
-  --signal frame_charbox_height_F1_reg  : integer range 0 to 255;
-  --signal frame_charbox_width_F2_reg   : integer range 0 to 127;
-  --signal frame_charbox_height_F2_reg  : integer range 0 to 255;
-  --signal frame_charbox_width_F3_reg   : integer range 0 to 127;
-  --signal frame_charbox_height_F3_reg  : integer range 0 to 255;
   signal charbox_width_reg   : integer range 0 to 127;
   signal charbox_height_reg  : integer range 0 to 255;
   signal frame_ttmode_flag_reg        : std_logic_vector(3 downto 0);
@@ -144,16 +136,16 @@ architecture RTL of ChiinaDazzler is
   -- Data
   signal  WDBF_vreg             : std_logic_vector(7 downto 0);
   -- Countup control
-  signal  charbox_enable_sig    : std_logic;
+  signal  charbox_enable_reg    : std_logic;
   signal  charbox_width_counter : integer range 0 to 127;
   signal  charbox_height_counter: integer range 0 to 255;
-  signal  charbox_top_height    : std_logic_vector(7 downto 0);
+  signal  charbox_top_y    : std_logic_vector(7 downto 0);
   signal  charbox_next_x        : integer range 0 to 255;
+  signal  charbox_base_x        : std_logic_vector(6 downto 0);
 
 --+-----------------------------------------------------------
 -- 16 or 2 colors
   signal  mode_sig            : std_logic;                    -- current mode
-  signal  line_width_sig      : integer range 0 to 256;
 --+-----------------------------------------------------------
 -- 2 colors
   signal  tt_shift_reg    : std_logic_vector(6 downto 0); -- shift register
@@ -209,12 +201,14 @@ begin
       vaddr_vec(9 downto 2)&"00"&haddr_vec(7 downto 3)          when others;
 
 --+-----------------------------------------------------------
--- Write Mode Signal
-  with charbox_width_reg select
-    charbox_enable_sig <= '0' when 0,
-                          '1' when others;
-
+-- Charbox signals
+  -- charbox on/off
+  --with charbox_width_reg select
+  --  charbox_enable_reg <= '0' when 0,
+  --                        '1' when others;
+  -- next-x
   charbox_next_x <= to_integer(unsigned(vram_writecursor_reg(6 downto 0)))+1;
+  --charbox_height_reg <= 8;
 
 --======================================================================
 --                         Receive MPU data
@@ -310,14 +304,15 @@ begin
 -- PTRX: VraM Adress Horizonal
             when "010" =>
               -- reset counter
-              charbox_width_counter <= charbox_width_reg;
+              charbox_width_counter <= 0;
+              charbox_base_x <= std_logic_vector(to_unsigned(charbox_next_x,7));
               vram_writecursor_reg(6 downto 0) <= data_buff_reg1(6 downto 0);
 --+-----------------------------------------------------------
 -- PTRY: VraM Adress Vertical
             when "011" =>
               -- reset counter
-              charbox_height_counter <= charbox_height_reg;
-              charbox_top_height    <= data_buff_reg1(7 downto 0);
+              charbox_height_counter <= 0;
+              charbox_top_y    <= data_buff_reg1(7 downto 0);
               vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
 --+-----------------------------------------------------------
 -- WDAT: Write Data BuFfer
@@ -331,7 +326,8 @@ begin
 --+-----------------------------------------------------------
 -- CHRW: CHARbox Width
             when "110" =>
-              charbox_width_reg <= to_integer(unsigned(data_buff_reg1));
+              charbox_enable_reg <= data_buff_reg1(7);
+              charbox_width_reg <= to_integer(unsigned(data_buff_reg1(6 downto 0)));
 --+-----------------------------------------------------------
 -- CHRH: CHARbox Height
             when "111" =>
@@ -366,32 +362,33 @@ begin
 
 --+-----------------------------------------------------------
 -- Count-Up
-            if(nedge_write_flag_reg = '1' and charbox_enable_sig = '1')then
+            if(nedge_write_flag_reg = '1')then
               --+-----------------------------------------------------------
               -- Over Right
-              if(charbox_width_counter = 1)then
-                charbox_width_counter <= charbox_width_reg;        -- width counter reset
+              if(charbox_width_counter = charbox_width_reg)then
+                if(charbox_enable_reg = '1')then
+                  charbox_width_counter <= 0;        -- width counter reset
                 --+-----------------------------------------------------------
                 -- Over Bottom-Right
-                if(charbox_height_counter = 1)then  -- over bottom-right
-                  vram_writecursor_reg(14 downto 7) <= charbox_top_height;
-                  vram_writecursor_reg(6 downto 0) <= std_logic_vector(to_unsigned(charbox_next_x,7));
-                  charbox_height_counter <= charbox_height_reg;
+                  if(charbox_height_counter = charbox_height_reg)then  -- over bottom-right
+                    vram_writecursor_reg(14 downto 7) <= charbox_top_y;
+                    vram_writecursor_reg(6 downto 0) <= std_logic_vector(to_unsigned(charbox_next_x,7));
+                    charbox_base_x <= std_logic_vector(to_unsigned(charbox_next_x,7));
+                    charbox_height_counter <= 0;
                 --+-----------------------------------------------------------
                 -- Over Right but Bottom
-                else                                -- over rignt but bottom
-                  vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
-                                          +129                                                          -- LF
-                                          -charbox_width_reg);                                          -- CR
-                  charbox_height_counter <= charbox_height_counter-1;
-                end if; -- /bottom right
+                  else                                -- over rignt but bottom
+                    vram_writecursor_reg(14 downto 7) <= std_logic_vector(unsigned(vram_writecursor_reg(14 downto 7))+1);
+                    vram_writecursor_reg(6 downto 0) <= charbox_base_x;
+                    charbox_height_counter <= charbox_height_counter+1;
+                  end if; -- /bottom right
+                end if;
               --+-----------------------------------------------------------
               -- No Over
               else
+                -- right next
                 vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)+1);
-                if(charbox_width_counter>0)then
-                  charbox_width_counter <= charbox_width_counter-1;
-                end if;
+                charbox_width_counter <= charbox_width_counter+1;
               end if;   -- /right
            end if;
           when others =>
