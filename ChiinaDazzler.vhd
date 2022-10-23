@@ -119,10 +119,16 @@ architecture RTL of ChiinaDazzler is
 
 --+-----------------------------------------------------------
 -- Frame-specific data
-  type frame_charbox_width_type is array (0 to 3) of integer range 0 to 127;
-  type frame_charbox_height_type is array (0 to 3) of integer range 0 to 255;
-  signal frame_charbox_width_regfile  : frame_charbox_width_type;
-  signal frame_charbox_height_regfile : frame_charbox_height_type;
+  signal frame_charbox_width_F0_reg   : integer range 0 to 127;
+  signal frame_charbox_height_F0_reg  : integer range 0 to 255;
+  signal frame_charbox_width_F1_reg   : integer range 0 to 127;
+  signal frame_charbox_height_F1_reg  : integer range 0 to 255;
+  signal frame_charbox_width_F2_reg   : integer range 0 to 127;
+  signal frame_charbox_height_F2_reg  : integer range 0 to 255;
+  signal frame_charbox_width_F3_reg   : integer range 0 to 127;
+  signal frame_charbox_height_F3_reg  : integer range 0 to 255;
+  signal nowframe_charbox_width_sig   : integer range 0 to 127;
+  signal nowframe_charbox_height_sig  : integer range 0 to 255;
   signal frame_ttmode_flag_reg        : std_logic_vector(3 downto 0);
 
 --+-----------------------------------------------------------
@@ -206,9 +212,21 @@ begin
     line_width_sig <= 128 when '0',
                       32  when others;
 
-  with frame_charbox_width_regfile(write_frame_intc) select
+  with nowframe_charbox_width_sig select
     charbox_enable_sig <= '0' when 0,
                           '1' when others;
+
+  with write_frame_intc select
+    nowframe_charbox_width_sig <= frame_charbox_width_F0_reg when 0,
+                              frame_charbox_width_F1_reg when 1,
+                              frame_charbox_width_F2_reg when 2,
+                              frame_charbox_width_F2_reg when others;
+
+  with write_frame_intc select
+    nowframe_charbox_height_sig <= frame_charbox_height_F0_reg when 0,
+                              frame_charbox_height_F1_reg when 1,
+                              frame_charbox_height_F2_reg when 2,
+                              frame_charbox_height_F2_reg when others;
 
 --======================================================================
 --                         Receive MPU data
@@ -303,8 +321,8 @@ begin
 -- PTRX: VraM Adress Horizonal
             when "010" =>
               -- reset counter
-              charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
-              charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+              charbox_width_counter <= nowframe_charbox_width_sig;
+              charbox_heignt_counter <= nowframe_charbox_height_sig;
               case frame_ttmode_flag_reg(write_frame_intc) is
                 when '0' =>
                   vram_writecursor_reg(6 downto 0) <=
@@ -317,8 +335,8 @@ begin
 -- PTRY: VraM Adress Vertical
             when "011" =>
               -- reset counter
-              charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);
-              charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+              charbox_width_counter <= nowframe_charbox_width_sig;
+              charbox_heignt_counter <= nowframe_charbox_height_sig;
               case frame_ttmode_flag_reg(write_frame_intc) is
                 when '0' =>
                   vram_writecursor_reg(14 downto 7) <= data_buff_reg1;
@@ -337,13 +355,23 @@ begin
 --+-----------------------------------------------------------
 -- CHRW: CHARbox Width
             when "110" =>
-              frame_charbox_width_regfile(write_frame_intc)
-                <= to_integer(unsigned(data_buff_reg1));
+              --nowframe_charbox_width_sig <= to_integer(unsigned(data_buff_reg1));
+              case write_frame_intc is
+                when 0 => frame_charbox_width_F0_reg <= to_integer(unsigned(data_buff_reg1));
+                when 1 => frame_charbox_width_F1_reg <= to_integer(unsigned(data_buff_reg1));
+                when 2 => frame_charbox_width_F2_reg <= to_integer(unsigned(data_buff_reg1));
+                when others => frame_charbox_width_F3_reg <= to_integer(unsigned(data_buff_reg1));
+              end case;
 --+-----------------------------------------------------------
 -- CHRH: CHARbox Height
             when "111" =>
-              frame_charbox_height_regfile(write_frame_intc)
-                <= to_integer(unsigned(data_buff_reg1));
+              --nowframe_charbox_height_sig <= to_integer(unsigned(data_buff_reg1));
+              case write_frame_intc is
+                when 0 => frame_charbox_height_F0_reg <= to_integer(unsigned(data_buff_reg1));
+                when 1 => frame_charbox_height_F1_reg <= to_integer(unsigned(data_buff_reg1));
+                when 2 => frame_charbox_height_F2_reg <= to_integer(unsigned(data_buff_reg1));
+                when others => frame_charbox_height_F3_reg <= to_integer(unsigned(data_buff_reg1));
+              end case;
             when others =>
           end case;
         end if;
@@ -378,20 +406,20 @@ begin
               --+-----------------------------------------------------------
               -- Over Right
               if(charbox_width_counter = 1)then
-                charbox_width_counter <= frame_charbox_width_regfile(write_frame_intc);        -- width counter reset
+                charbox_width_counter <= nowframe_charbox_width_sig;        -- width counter reset
                 --+-----------------------------------------------------------
                 -- Over Bottom-Right
                 if(charbox_heignt_counter = 1)then  -- over bottom-right
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
                                           +1                                                                -- next
-                                          -(line_width_sig*frame_charbox_width_regfile(write_frame_intc))); -- rising
-                  charbox_heignt_counter <= frame_charbox_height_regfile(write_frame_intc);
+                                          -(line_width_sig*nowframe_charbox_width_sig)); -- rising
+                  charbox_heignt_counter <= nowframe_charbox_height_sig;
                 --+-----------------------------------------------------------
                 -- Over Right but Bottom
                 else                                -- over rignt but bottom
                   vram_writecursor_reg <= std_logic_vector(unsigned(vram_writecursor_reg)
                                           +line_width_sig                                                   -- LF
-                                          -frame_charbox_width_regfile(write_frame_intc)+1);                -- CR
+                                          -nowframe_charbox_width_sig);                                          -- CR
                   charbox_heignt_counter <= charbox_heignt_counter-1;
                 end if; -- /bottom right
               --+-----------------------------------------------------------
